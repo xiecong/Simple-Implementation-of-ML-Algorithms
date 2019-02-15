@@ -2,17 +2,18 @@
 My simplest implementations of common ML algorithms using only numpy.
 Will keep updating.
 
-* Logistic regression
-* Decision tree
+* Logistic Regression
+* MLP
+* Decision Tree
 * Naive Bayes
 * Bayesian Network
-* Support vector machine
-* MLP
+* Support Vector Machine
 * CNN
 * GAN
 * GBDT
 * HMM
 * Genetic Algorithm
 * Reemforcement learning
+* Random Forest
 
 Feel free to use the code. Please contact me if you have any questions: xiecng@gmail.com
