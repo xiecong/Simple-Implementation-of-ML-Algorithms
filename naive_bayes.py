@@ -2,6 +2,7 @@ import numpy as np
 
 class NaiveBayes():
 	#multinominal NB model with laplace smoothing
+	#guassian can be used for numerical
 	def __init__(self):
 		self.data = [['my', 'dog', 'has', 'flea', 'problems', 'help', 'please'],
 					['maybe', 'not', 'take', 'him', 'to', 'dog', 'park', 'stupid'],
