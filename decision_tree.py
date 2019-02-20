@@ -1,21 +1,20 @@
 import numpy as np
 
-def entropy(dist):
-	return -np.sum(np.multiply(dist, np.log2(dist+1e-8)))
+def entropy(p):
+	return -np.sum(np.multiply(p, np.log2(p+1e-8)))
 
-def impurity(dist):
-	return 1 - np.sum(np.square(dist))
+def impurity(p):
+	return 1 - np.sum(np.square(p))
 
 class DecisionTree():
-	def __init__(self, metric_type, depth):
+	def __init__(self, data, metric_type, depth, feats=None):		
 		metrics = {'Info gain': entropy, 'Gini impurity':impurity}
-		x = np.loadtxt("data/iris.data", delimiter = ',', usecols = (0,1,2,3), dtype = float)
-		y = np.loadtxt("data/iris.data", delimiter = ',', usecols = (4), dtype = str)
-		self.data = np.c_[x, y]
-		self.labels = np.unique(y)
+		self.data = data
+		self.labels = np.unique(data[:,-1])
 		self.metric = metrics[metric_type]
 		self.tree = {}
-		self.feat_num = self.data.shape[1] - 1
+		self.feat_num = data.shape[1] - 1
+		self.features = np.arange(self.feat_num) if feats is None else feats
 		self.depth = depth
 
 	def get_score(self, data):
@@ -40,13 +39,15 @@ class DecisionTree():
 
 	def gen_leaf(self, data):
 		(values, counts) = np.unique(data[:,-1],return_counts=True)
-		return dict(zip(values, counts))
+		node = dict(zip(values, counts))
+		node['label'] = values[np.argmax(counts)]
+		return node
 
 	def split(self, data, p_score, depth):
 		if(p_score < 1e-8 or depth >= self.depth):
 			return self.gen_leaf(data)
 		score, f_id, value, splt = float('inf'), -1, 0, None
-		for f in range(self.feat_num):
+		for f in self.features:
 			for d in data:
 				l_child, r_child = self.assign(data, f, float(d[f]))
 				if(len(l_child)*len(r_child)==0):
@@ -81,9 +82,15 @@ class DecisionTree():
 			child = node['left'] if(sample[node['f_id']] < node['value']) else node['right']
 			return self.predict(sample, child)
 		else:
-			return node
+			return node['label']
 
-dt = DecisionTree('Info gain', 3)
-dt.train()
-dt.print_tree()
-print(dt.predict([6.7,3.0,5.2,2.3]))
+def main():
+	x = np.loadtxt("data/iris.data", delimiter = ',', usecols = range(4), dtype = float)
+	y = np.loadtxt("data/iris.data", delimiter = ',', usecols = (4), dtype = str)
+	dt = DecisionTree(np.c_[x, y],'Gini impurity', 5)
+	dt.train()
+	dt.print_tree()
+	print([dt.predict(xi) for xi in x])
+
+if __name__ == "__main__":
+    main()
