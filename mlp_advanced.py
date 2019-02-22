@@ -159,7 +159,7 @@ class MLP():
             act = self.afunc(act.dot(self.w[i]) + self.b[i])
         return act.dot(self.w[self.layer_num-1]) + self.b[self.layer_num-1]
 
-    def train(self):
+    def fit(self):
         l_num = self.layer_num
         bvec = np.ones((1, self.batch_size))
         for epoch in range(self.epochs):
@@ -194,5 +194,5 @@ class MLP():
                 boundary_vis(self, epoch)
 
 mlp = MLP('Tanh', 'spiral', 'RMSprop')
-mlp.train()
+mlp.fit()
 plt.show()

@@ -1,23 +1,24 @@
 import numpy as np
+from sklearn import datasets
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 class LogisticRegression():
-	def __init__(self):
-		self.x = np.loadtxt("data/iris.data", delimiter = ',', usecols = (0,1,2,3), dtype = float)
-		y = np.loadtxt("data/iris.data", delimiter = ',', usecols = (4), dtype = str).reshape(-1,1)
-		class_mapping = {"b'Iris-setosa'":[1,0,0], "b'Iris-versicolor'":[0,1,0], "b'Iris-virginica'":[0,0,1]}
-		self.y = np.array([class_mapping[yi[0]] for yi in y])
-		self.w = np.random.randn(self.x.shape[1], 3)
-		self.b = np.random.randn(1, 3)
+	def __init__(self, x, y):
+		self.x = x
+		self.label_num = len(np.unique(y))	
+		self.y = np.zeros((x.shape[0], self.label_num))
+		self.y[np.arange(x.shape[0]), y] = 1
+		self.w = np.random.randn(self.x.shape[1], self.label_num)
+		self.b = np.random.randn(1, self.label_num)
 
 	def loss(self): #using cross entropy as loss function
 		eps = 1e-8
 		h = self.predict(self.x)
 		return -(np.multiply(self.y, np.log(h+eps)) + np.multiply((1 - self.y), np.log(1 - h+eps))).mean()
 
-	def train(self):
+	def fit(self):
 		train_num = self.x.shape[0]
 		learning_rate = 0.01
 		for i in range(5000):
@@ -31,6 +32,14 @@ class LogisticRegression():
 	def predict(self, x):
 		return sigmoid(x.dot(self.w) + self.b)
 
-lr = LogisticRegression()
-lr.train()
-print([np.argmax(o) for o in lr.predict(lr.x)])
+def main():
+	data = datasets.load_digits()
+	x = data.data
+	y = data.target
+	lr = LogisticRegression(x, y)
+	lr.fit()
+	res = lr.predict(lr.x)
+	print(sum(y[i]==np.argmax(o) for i, o in enumerate(res))/y.shape[0])
+
+if __name__ == "__main__":
+    main()

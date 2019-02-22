@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn import datasets
 import matplotlib.pyplot as plt
 '''
 this code uses EA to find the weights of an mlp which learns the iris dataset
@@ -13,35 +14,34 @@ def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 def softmax(x):
-	eps = 1e-8
-	x = np.exp(x)
-	return x / (np.sum(x, axis=1).reshape(-1, 1) + eps)
+    eps = 1e-8
+    out = np.exp(x - np.max(x, axis=1).reshape(-1, 1))
+    return out / (np.sum(out, axis=1).reshape(-1, 1) + eps)
 
 class NN():
-	def __init__(self, w1=None, b1=None, w2=None, b2=None):
-		self.w1 = np.random.randn(4, 6) if w1 is None else w1
-		self.b1 = np.random.randn(1, 6) if b1 is None else b1
-		self.w2 = np.random.randn(6, 3) if w2 is None else w2
-		self.b2 = np.random.randn(1, 3) if b2 is None else b2
+	def __init__(self, in_dim=None, h_dim=None, out_dim=None, w1=None, b1=None, w2=None, b2=None):
+		self.w1 = np.random.randn(in_dim, h_dim) if w1 is None else w1
+		self.b1 = np.random.randn(1, h_dim) if b1 is None else b1
+		self.w2 = np.random.randn(h_dim, out_dim) if w2 is None else w2
+		self.b2 = np.random.randn(1, out_dim) if b2 is None else b2
 
 	def loss(self, x, y): #using cross entropy as loss function
 		eps = 1e-8
-		h = self.predict(x)
-		return -(np.multiply(y, np.log(h+eps)) + np.multiply((1 - y), np.log(1 - h+eps))).mean()
+		return -(np.multiply(y, np.log(self.predict(x)))).mean()
 
 	def predict(self, x):
-		o1 = tanh(x.dot(self.w1) + self.b1)
+		o1 = sigmoid(x.dot(self.w1) + self.b1)
 		return softmax(o1.dot(self.w2) + self.b2)
 
 class EvolutionaryAlgorithm():
-	def __init__(self):
-		self.x = np.loadtxt("data/iris.data", delimiter = ',', usecols = (0,1,2,3), dtype = float)
-		y = np.loadtxt("data/iris.data", delimiter = ',', usecols = (4), dtype = str).reshape(-1,1)
-		class_mapping = {"b'Iris-setosa'":[1,0,0], "b'Iris-versicolor'":[0,1,0], "b'Iris-virginica'":[0,0,1]}
-		self.y = np.array([class_mapping[yi[0]] for yi in y])
-		self.pop_num = 100
-		self.elitism_num = 20
-		self.gen_num = 100
+	def __init__(self, x, y):
+		self.x = x
+		self.label_num = len(np.unique(y))	
+		self.y = np.zeros((x.shape[0], self.label_num))
+		self.y[np.arange(x.shape[0]), y] = 1
+		self.pop_num = 50
+		self.elitism_num = self.pop_num//3
+		self.gen_num = 600
 		self.mutate_rate = 0.1
 
 	def cross_over(self, w1, w2):
@@ -79,20 +79,18 @@ class EvolutionaryAlgorithm():
 			self.mutate(b1)
 			self.mutate(w2)
 			self.mutate(b2)
-			new_pop.append(NN(w1,b1,w2,b2))
+			new_pop.append(NN(w1=w1,b1=b1,w2=w2,b2=b2))
 
 		loss = [p.loss(self.x, self.y) for p in new_pop]
 		return new_pop, loss
 
 	def run(self):
-		population = [NN() for _ in range(self.pop_num)]
+		population = [NN(in_dim=self.x.shape[1], h_dim=32, out_dim=self.label_num) for _ in range(self.pop_num)]
 		losslog = []
 		for i in range(self.gen_num):
 			population, loss = self.evolve(population)
 			losslog.append([max(loss), np.mean(loss), min(loss)])
-			#print("step{} max:{} min:{} mean:{}".format(i, max(loss), min(loss), np.mean(loss)))
-		best = np.argmin(loss)
-		print([np.argmax(o) for o in population[best].predict(self.x)])
+			print("step{} max:{} min:{} mean:{}".format(i, max(loss), min(loss), np.mean(loss)))
 		losslog = np.array(losslog)
 		plt.plot(losslog[:,0])
 		plt.plot(losslog[:,1])
@@ -100,6 +98,16 @@ class EvolutionaryAlgorithm():
 		plt.legend(('max','mean','best'),loc='best')
 		plt.title('loss over generation')
 		plt.show()
+		return population[np.argmin(loss)]
 
-ea = EvolutionaryAlgorithm()
-ea.run()
+def main():
+	data = datasets.load_digits()
+	x = data.data
+	y = data.target
+	ea = EvolutionaryAlgorithm(x, y)
+	model = ea.run()
+	res = model.predict(x)	
+	print(sum(y[i] == np.argmax(o) for i, o in enumerate(res))/y.shape[0])
+
+if __name__ == "__main__":
+    main()

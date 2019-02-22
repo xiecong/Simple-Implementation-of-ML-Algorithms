@@ -9,12 +9,29 @@ For an easy understanding, most of the codes use toy datasets and within 100 lin
 * XGBoost
 * Genetic Algorithm
 * Multilayer Perceptron
-* CNN
 
-Will keep updating:
+Working on:
+* Convolutional Neural Network
+* Generative Adversarial Networks
+* RNN
+* LSTM
 * Reenforcement learning
-* GAN
-* HMM
-* Support Vector Machine
+
+Will update in the future
+* Linear Regression
+* k-NN
+* k-Means
+* GMM
+* PCA
+* Hidden Markov Model
+* Support Vector Machine (SMO)
+* Manifold Learning
+* Adaboost
+* SVD
+* Lasso
+* Beyasian Network
+* Maximum Entropy Model
+* Genetic Programming
+* Swarm Intelligence
 
 Feel free to use the code. Please contact me if you have any questions: xiecng@gmail.com

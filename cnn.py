@@ -5,10 +5,10 @@ class CNN():
 	def __init__(self):
 		pass
 
-	def train(self):
+	def fit(self):
 		pass
 
-	def prefict(self):
+	def predict(self):
 		pass
 
 cnn = CNN()

@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn import datasets
 
 def entropy(p):
 	return -np.sum(np.multiply(p, np.log2(p+1e-8)))
@@ -16,6 +17,7 @@ class DecisionTree():
 		self.feat_num = data.shape[1] - 1
 		self.features = np.arange(self.feat_num) if feats is None else feats
 		self.depth = depth
+		self.gain_threshold = 1e-8
 
 	def get_score(self, data):
 		(values, counts) = np.unique(data[:,-1],return_counts=True)
@@ -44,8 +46,9 @@ class DecisionTree():
 		return node
 
 	def split(self, data, p_score, depth):
-		if(p_score < 1e-8 or depth >= self.depth):
+		if(depth >= self.depth):
 			return self.gen_leaf(data)
+		data_num = len(data)
 		score, f_id, value, splt = float('inf'), -1, 0, None
 		for f in self.features:
 			for d in data:
@@ -54,24 +57,24 @@ class DecisionTree():
 					continue
 				l_score = self.get_score(l_child)
 				r_score = self.get_score(r_child)
-				#print("{}, {}".format(l_score,r_score))
-				if l_score + r_score < score:
-					score = l_score + r_score
+				c_score = l_score*len(l_child)/data_num + r_score*len(r_child)/data_num
+				if c_score < score:
+					score = c_score
 					f_id = f
 					value = float(d[f])
 					splt = {'l_child':l_child,
 							'l_score':l_score,
 							'r_child':r_child,
 							'r_score':r_score}
-		if f_id != -1:
+		if f_id != -1 and p_score - score > self.gain_threshold:
 			return {'f_id': f_id, 
 					'value': value,
 					'left': self.split(splt['l_child'], splt['l_score'], depth+1),
 					'right': self.split(splt['r_child'], splt['r_score'], depth+1)
 				   }
-		return self.gen_leaf(data)
+		else: return self.gen_leaf(data)
 
-	def train(self):
+	def fit(self):
 		score = self.get_score(self.data)
 		self.tree = self.split(self.data, score, 0)
 
@@ -85,12 +88,13 @@ class DecisionTree():
 			return node['label']
 
 def main():
-	x = np.loadtxt("data/iris.data", delimiter = ',', usecols = range(4), dtype = float)
-	y = np.loadtxt("data/iris.data", delimiter = ',', usecols = (4), dtype = str)
-	dt = DecisionTree(np.c_[x, y],'Gini impurity', 5)
-	dt.train()
+	data = datasets.load_iris()
+	x = data.data
+	y = data.target
+	dt = DecisionTree(np.c_[x, y],'Gini impurity', 4)
+	dt.fit()
 	dt.print_tree()
-	print([dt.predict(xi) for xi in x])
+	print(sum(dt.predict(xi)==y[i] for i, xi in enumerate(x)))
 
 if __name__ == "__main__":
     main()
