@@ -2,7 +2,7 @@ import numpy as np
 from sklearn import datasets
 from decision_tree import DecisionTree
 
-class RandomForest():
+class RandomForest(object):
 	def __init__(self, data):
 		self.max_depth = 8
 		self.tree_num = 10

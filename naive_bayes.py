@@ -2,7 +2,7 @@ import numpy as np
 from sklearn import datasets
 import re
 
-def clean_text(documents, stop_words):
+def tokenize(documents, stop_words):
 	text = []
 	for doc in documents:
 		letters_only = re.sub("[^a-zA-Z]", " ", doc)
@@ -10,7 +10,7 @@ def clean_text(documents, stop_words):
 		text.append([w for w in words if not w in stop_words])
 	return text
 
-class NaiveBayes():
+class NaiveBayes(object):
 	#multinominal NB model with laplace smoothing
 	#guassian can be used for numerical
 	def __init__(self, x, y):
@@ -50,9 +50,22 @@ class NaiveBayes():
 		return self.label[np.argmax(p)]
 
 def main():
-	stop_words = set(["i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", "at", "by", "for", "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now"])
+	stop_words = set(["i", "me", "my", "myself", "we", "our", "ours", "ourselves",
+		"you", "your", "yours", "yourself", "yourselves", "he", "him", "his",
+		"himself", "she", "her", "hers", "herself", "it", "its", "itself", "they",
+		"them", "their", "theirs", "themselves", "what", "which", "who", "whom",
+		"this", "that", "these", "those", "am", "is", "are", "was", "were", "be",
+		"been", "being", "have", "has", "had", "having", "do", "does", "did",
+		"doing", "a", "an", "the", "and", "but", "if", "or", "because", "as",
+		"until", "while", "of", "at", "by", "for", "with", "about", "against",
+		"between", "into", "through", "during", "before", "after", "above", "below",
+		"to", "from", "up", "down", "in", "out", "on", "off", "over", "under",
+		"again", "further", "then", "once", "here", "there", "when", "where", "why",
+		"how", "all", "any", "both", "each", "few", "more", "most", "other", "some",
+		"such", "no", "nor", "not", "only", "own", "same", "so", "than", "too",
+		"very", "s", "t", "can", "will", "just", "don", "should", "now"])
 	data = datasets.fetch_20newsgroups()
-	x = clean_text(data.data, stop_words)
+	x = tokenize(data.data, stop_words)
 	y = data.target
 	nb = NaiveBayes(x, y)
 	nb.fit()

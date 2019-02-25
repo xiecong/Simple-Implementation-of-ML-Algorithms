@@ -1,6 +1,6 @@
 import numpy as np
-
-class XGBoost():
+# importance for each feature
+class XGBoost(object):
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y

@@ -9,13 +9,13 @@ For an easy understanding, most of the codes use toy datasets and within 100 lin
 * XGBoost
 * Genetic Algorithm
 * Multilayer Perceptron
+* Convolutional Neural Network
 
 Working on:
-* Convolutional Neural Network
 * Generative Adversarial Networks
+* Deep Q-Network (Reenforcement learning)
 * RNN
 * LSTM
-* Reenforcement learning
 
 Will update in the future
 * Linear Regression

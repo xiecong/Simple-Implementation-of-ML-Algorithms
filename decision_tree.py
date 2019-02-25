@@ -7,7 +7,7 @@ def entropy(p):
 def impurity(p):
 	return 1 - np.sum(np.square(p))
 
-class DecisionTree():
+class DecisionTree(object):
 	def __init__(self, data, metric_type, depth, feats=None):		
 		metrics = {'Info gain': entropy, 'Gini impurity':impurity}
 		self.data = data

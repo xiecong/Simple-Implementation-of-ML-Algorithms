@@ -54,7 +54,7 @@ def dsigmoid(grad_a, act):
 def dtanh(grad_a, act):
     return np.multiply(grad_a, 1 - np.square(act))
 
-class MLP():
+class MLP(object):
     def __init__(self, act_type, data_type, opt_type):
         act_funcs = {'ReLU': relu, 'Sigmoid': sigmoid, 'Tanh': tanh}
         dacts = {'ReLU': drelu, 'Sigmoid': dsigmoid, 'Tanh': dtanh}

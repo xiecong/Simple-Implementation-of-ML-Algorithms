@@ -4,7 +4,7 @@ from sklearn import datasets
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
-class LogisticRegression():
+class LogisticRegression(object):
 	def __init__(self, x, y):
 		self.x = x
 		self.label_num = len(np.unique(y))	

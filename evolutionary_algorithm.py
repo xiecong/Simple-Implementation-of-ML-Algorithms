@@ -18,7 +18,7 @@ def softmax(x):
     out = np.exp(x - np.max(x, axis=1).reshape(-1, 1))
     return out / (np.sum(out, axis=1).reshape(-1, 1) + eps)
 
-class NN():
+class NN(object):
 	def __init__(self, in_dim=None, h_dim=None, out_dim=None, w1=None, b1=None, w2=None, b2=None):
 		self.w1 = np.random.randn(in_dim, h_dim) if w1 is None else w1
 		self.b1 = np.random.randn(1, h_dim) if b1 is None else b1
@@ -33,14 +33,14 @@ class NN():
 		o1 = sigmoid(x.dot(self.w1) + self.b1)
 		return softmax(o1.dot(self.w2) + self.b2)
 
-class EvolutionaryAlgorithm():
+class EvolutionaryAlgorithm(object):
 	def __init__(self, x, y):
 		self.x = x
 		self.label_num = len(np.unique(y))	
 		self.y = np.zeros((x.shape[0], self.label_num))
 		self.y[np.arange(x.shape[0]), y] = 1
 		self.pop_num = 50
-		self.elitism_num = self.pop_num//3
+		self.elitism_num = self.pop_num//5
 		self.gen_num = 600
 		self.mutate_rate = 0.1
 
