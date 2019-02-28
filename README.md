@@ -18,15 +18,13 @@ Working on:
 * LSTM
 
 Will update in the future
-* Linear Regression
 * k-NN
-* k-Means
 * GMM
-* PCA
 * Hidden Markov Model
 * Support Vector Machine (SMO)
 * Manifold Learning
 * Adaboost
+* PCA
 * SVD
 * Lasso
 * Beyasian Network

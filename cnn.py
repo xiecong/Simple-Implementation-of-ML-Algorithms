@@ -1,234 +1,24 @@
 import numpy as np
 from sklearn.datasets import fetch_openml
-
-# vectorize all the operation
-# dropout
-# batch normalization
-
-def relu(x):
-	return np.maximum(x, 0)
-
-def sigmoid(x):
-	return 1 / (1 + np.exp(-x))
-
-def tanh(x):
-	return np.tanh(x)
-
-def linear(x):
-	return x
-
-def drelu(grad_a, act):
-	grad_a[act <= 0] = 0
-	return grad_a
-
-def dsigmoid(grad_a, act):
-	return np.multiply(grad_a, act - np.square(act))
-
-def dtanh(grad_a, act):
-	return np.multiply(grad_a, 1 - np.square(act))
-
-def dlinear(grad_a, act):
-	return grad_a
-
-class Layer(object):
-	def __init__(self, has_param):
-		self.act_funcs = {'ReLU': relu, 'Sigmoid': sigmoid, 'Tanh': tanh, "Linear": linear}
-		self.dact_funcs = {'ReLU': drelu, 'Sigmoid': dsigmoid, 'Tanh': dtanh, "Linear": dlinear}
-		self.gradient_funcs = {'Adam':self.adam, "SGD": self.sgd}
-		self.learning_rate = 1e-2
-		self.weight_decay = 1e-4
-		self.has_param = has_param
-
-	def forward(self, x):
-		pass
-
-	def bp(self, grad_act):
-		pass
-
-	def update(self, grad_type):
-		if self.has_param:
-			self.regularize()
-			self.gradient_funcs[grad_type]()
-
-	def regularize(self):
-		self.w *= (1 - self.weight_decay)
-		self.b *= (1 - self.weight_decay)
-
-	def adam(self):
-		beta1 = 0.9
-		beta2 = 0.999
-		eps = 1e-8
-		alpha = self.learning_rate
-		self.mom_w = beta1 * self.mom_w + (1 - beta1) * self.grad_w
-		self.cache_w = beta2 * self.cache_w + (1 - beta2) * np.square(self.grad_w)
-		self.w -= alpha * self.mom_w / (np.sqrt(self.cache_w) + eps)
-		self.mom_b = beta1 * self.mom_b + (1 - beta1) * self.grad_b
-		self.cache_b = beta2 * self.cache_b + (1 - beta2) * np.square(self.grad_b)
-		self.b -= alpha * self.mom_b / (np.sqrt(self.cache_b) + eps)
-
-	def sgd(self):
-		self.w -= self.learning_rate * self.grad_w
-		self.b -= self.learning_rate * self.grad_b
-
-class Conv(Layer):
-	def __init__(self, in_shape, k_size, k_num, act_type, stride=1):
-		super(Conv, self).__init__(has_param=True)
-		self.act_func = self.act_funcs[act_type]
-		self.dact_func = self.dact_funcs[act_type]
-		self.in_shape = in_shape
-		channel, height, width = in_shape
-		self.k_size = k_size
-		self.w = np.random.randn(channel*k_size*k_size, k_num)
-		self.b = np.random.randn(1,k_num)
-
-		self.mom_w = np.zeros_like(self.w)
-		self.cache_w = np.zeros_like(self.w)
-		self.mom_b = np.zeros_like(self.b)
-		self.cache_b = np.zeros_like(self.b)
-
-		self.out_shape = (k_num, (height-k_size+1)//stride, (width-k_size+1)//stride)
-		self.stride = stride
-
-	def img2col(self, x):
-		col_matrix = []
-		channel, height, width = self.in_shape
-		for i in range(0, height-self.k_size+1, self.stride):
-			for j in range(0, width-self.k_size+1, self.stride):
-				#convert kernel size squre into row
-				col_matrix.append(x[:, i:i+self.k_size, j:j+self.k_size].reshape([-1]))
-		return np.array(col_matrix)
-
-	def forward(self, x):
-		act = []
-		self.input = []
-		for i in range(x.shape[0]):
-			self.input.append(self.img2col(x[i]))
-			out = self.input[i].dot(self.w)+self.b
-			act.append(out.T.reshape(self.out_shape))
-		return self.act_func(np.array(act))
-
-	def col2img(self, grad_colin):
-		k_size = self.k_size
-		img = np.zeros(self.in_shape)
-		for row in range(grad_colin.shape[0]):
-			i = row//self.out_shape[2]*self.stride
-			j = row%self.out_shape[2]*self.stride
-			img[:, i:i+k_size, j:j+k_size] += grad_colin[row].reshape([self.in_shape[0], k_size, k_size])
-		return img
-
-	def bp(self, grad_act, act):
-		batch_size = grad_act.shape[0]
-		b_vec = np.ones((1, self.out_shape[1] * self.out_shape[2]))
-		grad_out = self.dact_func(grad_act, act).reshape([batch_size, self.out_shape[0], -1])
-		self.grad_w = np.zeros(self.w.shape)
-		self.grad_b = np.zeros(self.b.shape)
-		grad_in = []
-		for i in range(batch_size):
-			grad_out_i = grad_out[i].T
-			self.grad_w += self.input[i].T.dot(grad_out_i)
-			self.grad_b += b_vec.dot(grad_out_i)
-			grad_in.append(self.col2img(grad_out_i.dot(self.w.T)))
-		self.grad_w /= batch_size
-		self.grad_b /= batch_size
-		self.input = None
-		return np.array(grad_in)
-
-class MaxPooling(Layer):
-	def __init__(self, in_shape, k_size, stride=None):
-		super(MaxPooling, self).__init__(has_param=False)
-		self.in_shape = in_shape
-		channel, height, width = in_shape
-		self.k_size = k_size
-		self.stride = k_size if stride is None else stride 
-		self.out_shape = [channel, height//self.stride, width//self.stride]
-
-	def forward(self, x):
-		batch_size = x.shape[0]
-		channel, height, width = self.in_shape
-		self.mask = np.zeros((batch_size, channel, height, width))
-		out = np.zeros((batch_size, channel, self.out_shape[1], self.out_shape[2]))
-		for b_idx in range(batch_size):
-			for c_idx in range(channel):
-				for i in range(0, height-self.k_size+1, self.stride):
-					for j in range(0, width-self.k_size+1, self.stride):
-						out[b_idx, c_idx, i//self.stride, j//self.stride] = \
-							np.max(x[b_idx, c_idx, i:i+self.k_size, j:j+self.k_size])
-						max_idx = np.argmax(x[b_idx, c_idx, i:i+self.k_size, j:j+self.k_size])
-						self.mask[b_idx, c_idx, i + max_idx//self.k_size, j + max_idx%self.k_size] = 1
-		return out
-
-	def bp(self, grad_out):
-		grad_out = np.repeat(grad_out, self.k_size, axis=2)
-		grad_out = np.repeat(grad_out, self.k_size, axis=3)
-		return np.multiply(self.mask, grad_out)
-
-
-class Softmax(Layer):
-	def __init__(self, w_size):
-		super(Softmax, self).__init__(has_param=False)
-
-	def forward(self, x):
-		return self.predict(x)
-
-	def loss(self, out, y):
-		eps = 1e-8
-		return -(np.multiply(y, np.log(out+eps))).mean()
-
-	def predict(self, x):
-		eps = 1e-8
-		out = np.exp(x - np.max(x, axis=1).reshape([-1, 1]))
-		return out / (np.sum(out, axis=1).reshape([-1, 1]) + eps)
-
-	def bp(self, out, y):
-		return out - y
-
-class FullyConnect(Layer):
-	def __init__(self, in_shape, out_dim, act_type):
-		super(FullyConnect, self).__init__(has_param=True)
-		self.act_func = self.act_funcs[act_type]
-		self.dact_func = self.dact_funcs[act_type]
-		self.in_shape = in_shape
-		self.w = np.random.randn(in_shape[0]*in_shape[1]*in_shape[2], out_dim)
-		self.b = np.random.randn(1, out_dim)
-		self.mom_w = np.zeros_like(self.w)
-		self.cache_w = np.zeros_like(self.w)
-		self.mom_b = np.zeros_like(self.b)
-		self.cache_b = np.zeros_like(self.b)
-
-	def forward(self, x):
-		self.input = x.reshape([x.shape[0],-1])
-		return self.act_func(self.input.dot(self.w)+self.b)
-
-	def bp(self, grad_act, act):
-		grad_act=grad_act.reshape([grad_act.shape[0], grad_act.shape[1]])
-		batch_size = grad_act.shape[0]
-		grad_out = self.dact_func(grad_act, act)
-		self.grad_w = self.input.T.dot(grad_out)
-		self.grad_b = np.ones((1, batch_size)).dot(grad_out)
-		self.grad_w /= batch_size
-		self.grad_b /= batch_size
-		self.input = None
-		return grad_out.dot(self.w.T).reshape([-1, self.in_shape[0], self.in_shape[1], self.in_shape[2]])
+from cnn_layer_advanced import *
 
 class CNN(object):
-	def __init__(self, x, y):
-		self.x = x
-		self.y = y
-		self.batch_size = 64
-		self.conv1 = Conv(in_shape=x.shape[1:4], k_num=12, k_size=5, act_type="ReLU")
+	def __init__(self, x_shape, label_num):
+		self.batch_size = 100
+		self.conv1 = Conv(in_shape=x_shape[1:4], k_num=6, k_size=5, act_type="ReLU")
 		self.pool1 = MaxPooling(in_shape=self.conv1.out_shape, k_size=2)
-		self.conv2 = Conv(in_shape=self.pool1.out_shape, k_num=24, k_size=3, act_type="ReLU")
+		self.conv2 = Conv(in_shape=self.pool1.out_shape, k_num=16, k_size=3, act_type="ReLU")
 		self.pool2 = MaxPooling(in_shape=self.conv2.out_shape, k_size=2)
-		self.fc = FullyConnect(self.pool2.out_shape, y.shape[1], act_type="Linear")
-		self.softmax = Softmax(y.shape[1])
+		self.fc = FullyConnect(self.pool2.out_shape, label_num, act_type="Linear")
+		self.softmax = Softmax(label_num)
 
-	def fit(self):
-		for epoch in range(20):
+	def fit(self, train_x, train_y, test_x, test_y):
+		for epoch in range(5):
 			#mini batch
-			permut=np.random.permutation(self.x.shape[0]//self.batch_size*self.batch_size).reshape([-1,self.batch_size])
+			permut=np.random.permutation(train_x.shape[0]//self.batch_size*self.batch_size).reshape([-1,self.batch_size])
 			for b_idx in range(permut.shape[0]):
-				x0 = self.x[permut[b_idx,:]]
-				y = self.y[permut[b_idx,:]]
+				x0 = train_x[permut[b_idx,:]]
+				y = train_y[permut[b_idx,:]]
 				out_c1 = self.conv1.forward(x0)
 				out_p1 = self.pool1.forward(out_c1)
 				out_c2 = self.conv2.forward(out_p1)
@@ -238,19 +28,29 @@ class CNN(object):
 
 				print("epoch {} batch {} loss: {}".format(epoch, b_idx, self.softmax.loss(out_sf, y)))
 
-				grad_sf = self.softmax.bp(out_sf, y)
-				grad_fc = self.fc.bp(grad_sf, out_fc)
-				grad_p2 = self.pool2.bp(grad_fc)
-				grad_c2 = self.conv2.bp(grad_p2, out_c2)
-				grad_p1 = self.pool1.bp(grad_c2)
-				grad_c1 = self.conv1.bp(grad_p1, out_c1)
+				grad_sf = self.softmax.gradient(out_sf, y)
+				grad_fc = self.fc.gradient(grad_sf, out_fc)
+				grad_p2 = self.pool2.gradient(grad_fc)
+				grad_c2 = self.conv2.gradient(grad_p2, out_c2)
+				grad_p1 = self.pool1.gradient(grad_c2)
+				grad_c1 = self.conv1.gradient(grad_p1, out_c1)
 
-				self.conv1.update("Adam")
-				self.conv2.update("Adam")
-				self.fc.update("Adam")
-			preds = self.predict(self.x)
-			print("epoch {} {}".format(epoch, self.softmax.loss(preds,self.y)))
-			print("accuracy: {}".format(sum(np.argmax(self.y[i])==np.argmax(o) for i, o in enumerate(preds))/self.y.shape[0]))
+				self.conv1.backward("Adam")
+				self.conv2.backward("Adam")
+				self.fc.backward("Adam")
+			self.test(test_x, test_y)
+
+	def test(self, test_x, test_y):
+		loss = 0
+		acc = 0
+		size = test_y.shape[0]
+		for i in range(0, len(test_x), self.batch_size):
+			x = test_x[i:i+self.batch_size]
+			y = test_y[i:i+self.batch_size]
+			preds = self.predict(x)
+			loss += self.softmax.loss(preds, y) * x.shape[0]
+			acc += sum(np.argmax(y[i])==np.argmax(o) for i, o in enumerate(preds))
+		print("loss: {} accuracy: {}".format(loss/size, acc/size))
 
 	def predict(self, x):
 		out_c1 = self.conv1.forward(x)
@@ -259,6 +59,23 @@ class CNN(object):
 		out_p2 = self.pool2.forward(out_c2)
 		out_fc = self.fc.forward(out_p2)
 		return self.softmax.forward(out_fc)
+
+	def gradient_check(self):
+		conva = Conv(in_shape=[16,32,28], k_num=12, k_size=3, act_type="Tanh")
+		convb = Conv(in_shape=[16,32,28], k_num=12, k_size=3, act_type="Tanh")
+		convb.w = conva.w.copy()
+		convb.b = conva.b.copy()
+		eps = 1e-4
+		x = np.random.randn(10,16,32,28)*10
+		x_a = x.copy()
+		x_b = x.copy()
+		idxes = [2,10,14,15]
+		x_a[idxes[0],idxes[1],idxes[2],idxes[3]]+=eps
+		x_b[idxes[0],idxes[1],idxes[2],idxes[3]]-=eps
+		out = conva.forward(x)
+		gradient = conva.gradient(np.ones(out.shape), out)
+		# the output should be in the order of eps*eps 
+		print((conva.forward(x_a) - convb.forward(x_b)).sum()/eps/2-gradient[idxes[0],idxes[1],idxes[2],idxes[3]])
 
 def loadMNIST(prefix, folder):
 	intType = np.dtype('int32').newbyteorder('>')
@@ -270,15 +87,14 @@ def loadMNIST(prefix, folder):
 	return data, labels
 
 def main():
-	#x, y = fetch_openml('mnist_784', version=1, return_X_y=True)
-	train_x, train_y = loadMNIST("t10k", "data/mnist")
-	train_num = 5000#train_x.shape[0]
-	train_x = train_x[0:train_num]
-	train_y = train_y[0:train_num]
-	train_label = np.zeros((train_num, 10))
-	train_label[np.arange(train_num), train_y] = 1
-	cnn = CNN(train_x, train_label)
-	cnn.fit()
+	x, label = fetch_openml('mnist_784', version=1, cache=True, return_X_y=True, data_home="data")
+	x = x.reshape(x.shape[0],1,28,28)
+	y = np.zeros((x.shape[0],10))
+	y[np.arange(x.shape[0]), label.astype(np.int_)] = 1
+
+	train_num = 60000
+	cnn = CNN((train_num,1,28,28), 10)
+	cnn.fit(x[:train_num], y[:train_num], x[train_num:], y[train_num:])
 	
 if __name__ == "__main__":
 	main()
