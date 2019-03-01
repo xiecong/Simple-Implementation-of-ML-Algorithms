@@ -1,27 +1,35 @@
 import numpy as np
 from sklearn import datasets
 
-def entropy(p):
+def entropy(data):
+	(values, counts) = np.unique(data[:,-1],return_counts=True)
+	p = counts/len(data)
 	return -np.sum(np.multiply(p, np.log2(p+1e-8)))
 
-def impurity(p):
+def impurity(data):	
+	(values, counts) = np.unique(data[:,-1],return_counts=True)
+	p = counts/len(data)
 	return 1 - np.sum(np.square(p))
 
+def variance(data):
+	avg = data[:,-1].mean()
+	return np.square(avg - data[:,-1]).sum()
+
 class DecisionTree(object):
-	def __init__(self, data, metric_type, depth, feats=None):		
-		metrics = {'Info gain': entropy, 'Gini impurity':impurity}
+	def __init__(self, data, metric_type, depth, regression=False, feats=None):		
+		metrics = {'Info gain': entropy, 
+				   'Gini impurity':impurity, 
+				   'Variance': variance
+				   }
 		self.data = data
 		self.labels = np.unique(data[:,-1])
+		self.regression = regression
 		self.metric = metrics[metric_type]
 		self.tree = {}
 		self.feat_num = data.shape[1] - 1
 		self.features = np.arange(self.feat_num) if feats is None else feats
 		self.depth = depth
 		self.gain_threshold = 1e-8
-
-	def get_score(self, data):
-		(values, counts) = np.unique(data[:,-1],return_counts=True)
-		return self.metric(counts/len(data))
 
 	def print_tree(self, node=None, depth=0):
 		if node is None:
@@ -40,43 +48,40 @@ class DecisionTree(object):
 		return np.array(l_child), np.array(r_child)
 
 	def gen_leaf(self, data):
-		(values, counts) = np.unique(data[:,-1],return_counts=True)
-		node = dict(zip(values, counts))
-		node['label'] = values[np.argmax(counts)]
+		if not self.regression:
+			(values, counts) = np.unique(data[:,-1],return_counts=True)
+			node = dict(zip(values, counts))
+			node['label'] = values[np.argmax(counts)]
+		else:
+			node = {'label': data[:,-1].mean()}
 		return node
 
-	def split(self, data, p_score, depth):
-		if(depth >= self.depth):
-			return self.gen_leaf(data)
-		data_num = len(data)
-		score, f_id, value, splt = float('inf'), -1, 0, None
+	def split(self, data, depth):
+		if(depth >= self.depth): return self.gen_leaf(data)
+		p_score = self.metric(data)
+		max_gain, f_id, value, splt_l, splt_r = self.gain_threshold, -1, 0, None, None
 		for f in self.features:
 			for d in data:
 				l_child, r_child = self.assign(data, f, float(d[f]))
 				if(len(l_child)*len(r_child)==0):
 					continue
-				l_score = self.get_score(l_child)
-				r_score = self.get_score(r_child)
-				c_score = l_score*len(l_child)/data_num + r_score*len(r_child)/data_num
-				if c_score < score:
-					score = c_score
+				gain = p_score - self.metric(l_child)*len(l_child)/len(data) \
+					- self.metric(r_child)*len(r_child)/len(data)
+				if gain > max_gain:
+					max_gain = gain
 					f_id = f
 					value = float(d[f])
-					splt = {'l_child':l_child,
-							'l_score':l_score,
-							'r_child':r_child,
-							'r_score':r_score}
-		if f_id != -1 and p_score - score > self.gain_threshold:
+					splt_l, splt_r = l_child, r_child
+		if f_id != -1:
 			return {'f_id': f_id, 
 					'value': value,
-					'left': self.split(splt['l_child'], splt['l_score'], depth+1),
-					'right': self.split(splt['r_child'], splt['r_score'], depth+1)
+					'left': self.split(splt_l, depth+1),
+					'right': self.split(splt_r, depth+1)
 				   }
 		else: return self.gen_leaf(data)
 
 	def fit(self):
-		score = self.get_score(self.data)
-		self.tree = self.split(self.data, score, 0)
+		self.tree = self.split(self.data, 0)
 
 	def predict(self, sample, node=None):
 		if node is None:
@@ -91,7 +96,7 @@ def main():
 	data = datasets.load_iris()
 	x = data.data
 	y = data.target
-	dt = DecisionTree(np.c_[x, y],'Gini impurity', 4)
+	dt = DecisionTree(data=np.c_[x, y], metric_type='Gini impurity', depth=4)
 	dt.fit()
 	dt.print_tree()
 	print(sum(dt.predict(xi)==y[i] for i, xi in enumerate(x)))

@@ -6,30 +6,20 @@ For an easy understanding, most of the codes use toy datasets and within 100 lin
 * Naive Bayes
 * Decision Tree
 * Random Forest
+* GBDT
 * XGBoost
 * Genetic Algorithm
 * Multilayer Perceptron
 * Convolutional Neural Network
 
 Working on:
+* Support Vector Machine (SMO)
+* Adaboost
+* Hidden Markov Model
+* Beyasian Network
 * Generative Adversarial Networks
 * Deep Q-Network (Reenforcement learning)
 * RNN
 * LSTM
-
-Will update in the future
-* k-NN
-* GMM
-* Hidden Markov Model
-* Support Vector Machine (SMO)
-* Manifold Learning
-* Adaboost
-* PCA
-* SVD
-* Lasso
-* Beyasian Network
-* Maximum Entropy Model
-* Genetic Programming
-* Swarm Intelligence
 
 Feel free to use the code. Please contact me if you have any questions: xiecng@gmail.com

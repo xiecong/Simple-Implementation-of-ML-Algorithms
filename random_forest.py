@@ -23,10 +23,8 @@ class RandomForest(object):
 			self.forest.append(dt)
 
 	def predict(self, x):
-		res = []
-		for i in range(self.tree_num):
-			res.append(self.forest[i].predict(x))
-		(values, counts) = np.unique(res,return_counts=True)
+		res = [tree.predict(x) for tree in self.forest]
+		(values, counts) = np.unique(res, return_counts=True)
 		return values[np.argmax(counts)]#dict(zip(values, counts/counts.sum()))
 
 def main():

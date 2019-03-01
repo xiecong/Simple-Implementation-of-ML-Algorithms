@@ -37,7 +37,7 @@ class Layer(object):
 	def forward(self, x):
 		pass
 
-	def gradient(self, grad_act):
+	def gradient(self, grad_act, act):
 		pass
 
 	def backward(self, grad_type):
@@ -182,8 +182,8 @@ class FullyConnect(Layer):
 		super(FullyConnect, self).__init__(has_param=True)
 		self.act_func = self.act_funcs[act_type]
 		self.dact_func = self.dact_funcs[act_type]
-		self.in_shape = in_shape
-		self.w = np.random.randn(in_shape[0]*in_shape[1]*in_shape[2], out_dim)
+		self.in_shape = np.array(in_shape)
+		self.w = np.random.randn(self.in_shape.prod(), out_dim)
 		self.b = np.random.randn(1, out_dim)
 		self.mom_w = np.zeros_like(self.w)
 		self.cache_w = np.zeros_like(self.w)
@@ -203,4 +203,5 @@ class FullyConnect(Layer):
 		self.grad_w /= batch_size
 		self.grad_b /= batch_size
 		self.input = None
-		return grad_out.dot(self.w.T).reshape([-1, self.in_shape[0], self.in_shape[1], self.in_shape[2]])
+		in_shape = self.in_shape.copy()
+		return grad_out.dot(self.w.T).reshape(np.insert(in_shape, 0, -1))
