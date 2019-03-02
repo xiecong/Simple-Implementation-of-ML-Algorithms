@@ -6,7 +6,7 @@ For an easy understanding, most of the codes use toy datasets and within 100 lin
 * Naive Bayes
 * Decision Tree
 * Random Forest
-* GBDT
+* Gradient Boost Decision Tree
 * XGBoost
 * Genetic Algorithm
 * Multilayer Perceptron

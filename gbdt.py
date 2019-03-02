@@ -2,34 +2,34 @@ import numpy as np
 from sklearn import datasets
 from decision_tree import DecisionTree
 
+def square_loss(y, pred):
+	return np.square(pred-y).mean()/2
+
+def gradient(y, pred):
+	return pred - y
+
 # will add feature importance calculation
 class GBDT(object):
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
 		self.max_depth = 5
-		self.tree_num = 20
+		self.tree_num = 10
 		self.forest = []
 		self.rhos = []
 		# tree0 is a constant
 		self.t0 = np.ones(self.y.shape[0]) * self.y.mean()
 
 	def linear_search(self, y, pred, f):
-		min_loss = np.float('inf')
-		rho = 0
-		for i in range(21):
-			r = i/20
-			loss = np.square(y-pred+r*f).mean()
-			if(loss<min_loss):
-				min_loss = loss
-				rho = r
-		return rho
+		shrinkage = 1	
+		losses = [square_loss(y,pred+i*f/10) for i in range(1,21)]
+		return shrinkage * (np.argmin(losses)+1)/10
 
 	def fit(self):
 		pred = self.t0
 		for i in range(self.tree_num):
-			gradient = pred - self.y 
-			self.forest.append(DecisionTree(data=np.c_[self.x, gradient],
+			grad = gradient(self.y, pred)
+			self.forest.append(DecisionTree(data=np.c_[self.x, grad],
 											metric_type="Variance",
 											depth=self.max_depth,
 											regression=True))
@@ -38,9 +38,8 @@ class GBDT(object):
 			# find best learning rate
 			self.rhos.append(self.linear_search(self.y, pred, f))
 			pred -= f * self.rhos[i]
-			# gradient for square loss
 			# for categorical dataset, use cross entropy loss
-			print("tree {} constructed, loss {}".format(i, np.square(pred-self.y).mean()/2))
+			print("tree {} constructed, loss {}".format(i, square_loss(pred,self.y)))
 
 	def predict(self, x):
 		pred = self.t0

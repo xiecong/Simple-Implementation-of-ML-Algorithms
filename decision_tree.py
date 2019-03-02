@@ -31,6 +31,11 @@ class DecisionTree(object):
 		self.depth = depth
 		self.gain_threshold = 1e-8
 
+	def split_gain(self, p_score, l_child, r_child):
+		data_num = len(l_child)+len(r_child)
+		return p_score - self.metric(l_child)*len(l_child)/data_num\
+			- self.metric(r_child)*len(r_child)/data_num
+
 	def print_tree(self, node=None, depth=0):
 		if node is None:
 			node = self.tree
@@ -65,8 +70,7 @@ class DecisionTree(object):
 				l_child, r_child = self.assign(data, f, float(d[f]))
 				if(len(l_child)*len(r_child)==0):
 					continue
-				gain = p_score - self.metric(l_child)*len(l_child)/len(data) \
-					- self.metric(r_child)*len(r_child)/len(data)
+				gain = self.split_gain(p_score, l_child, r_child)
 				if gain > max_gain:
 					max_gain = gain
 					f_id = f
