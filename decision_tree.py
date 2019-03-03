@@ -30,6 +30,7 @@ class DecisionTree(object):
 		self.features = np.arange(self.feat_num) if feats is None else feats
 		self.depth = depth
 		self.gain_threshold = 1e-8
+		self.importance = np.zeros(self.data.shape[1]-1)
 
 	def split_gain(self, p_score, l_child, r_child):
 		data_num = len(l_child)+len(r_child)
@@ -46,12 +47,6 @@ class DecisionTree(object):
 		else:
 			print('{}{}'.format(depth*' ', node))
 
-	def assign(self, data, f_id, value):
-		# split
-		l_child = [d for d in data if float(d[f_id]) < value]
-		r_child = [d for d in data if float(d[f_id]) >= value]
-		return np.array(l_child), np.array(r_child)
-
 	def gen_leaf(self, data):
 		if not self.regression:
 			(values, counts) = np.unique(data[:,-1],return_counts=True)
@@ -66,18 +61,21 @@ class DecisionTree(object):
 		p_score = self.metric(data)
 		max_gain, f_id, value, splt_l, splt_r = self.gain_threshold, -1, 0, None, None
 		for f in self.features:
-			for d in data:
-				l_child, r_child = self.assign(data, f, float(d[f]))
+			split_values = np.unique(data[:,f].round(decimals=4))
+			for split_value in split_values:
+				l_child = data[np.nonzero(data[:,f]<split_value)]
+				r_child = data[np.nonzero(data[:,f]>=split_value)]
 				if(len(l_child)*len(r_child)==0):
 					continue
 				gain = self.split_gain(p_score, l_child, r_child)
 				if gain > max_gain:
 					max_gain = gain
 					f_id = f
-					value = float(d[f])
+					value = split_value
 					splt_l, splt_r = l_child, r_child
 		if f_id != -1:
-			return {'f_id': f_id, 
+			self.importance[f_id] += max_gain * data.shape[0] / self.data.shape[0]
+			return {'f_id': f_id,
 					'value': value,
 					'left': self.split(splt_l, depth+1),
 					'right': self.split(splt_r, depth+1)
@@ -96,6 +94,9 @@ class DecisionTree(object):
 		else:
 			return node['label']
 
+	def get_importance(self):
+		return self.importance
+
 def main():
 	data = datasets.load_iris()
 	x = data.data
@@ -103,6 +104,7 @@ def main():
 	dt = DecisionTree(data=np.c_[x, y], metric_type='Gini impurity', depth=4)
 	dt.fit()
 	dt.print_tree()
+	print(dt.importance)
 	print(sum(dt.predict(xi)==y[i] for i, xi in enumerate(x)))
 
 if __name__ == "__main__":

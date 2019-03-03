@@ -31,17 +31,20 @@ class XGBoost(object):
 		self.forest = []
 		self.shrinkage = 1
 
+	def get_importance(self):
+		return sum(tree.get_importance() for tree in self.forest)/self.tree_num
+
 	def fit(self):
 		pred = np.zeros(self.y.shape)
 		for i in range(self.tree_num):
 			gradient = pred - self.y
 			self.forest.append(XGBoostRegressionTree(data=np.c_[self.x, gradient], max_depth=self.max_depth))
 			self.forest[i].fit()
-			pred += [self.forest[i].predict(xi) * self.shrinkage for xi in self.x]
+			pred += np.array([self.forest[i].predict(xi) * self.shrinkage for xi in self.x])
 			print("tree {} constructed, loss {}".format(i, square_loss(pred,self.y)))
 
 	def predict(self, x):
-		return [sum(tree.predict(xi) * self.shrinkage for tree in self.forest) for xi in x]
+		return np.array([sum(tree.predict(xi) * self.shrinkage for tree in self.forest) for xi in x])
 
 def main():
 	data = datasets.load_boston()
@@ -49,6 +52,7 @@ def main():
 	y = data.target
 	xgboost = XGBoost(x, y)
 	xgboost.fit()
+	print(xgboost.get_importance())
 
 if __name__ == "__main__":
 	main()

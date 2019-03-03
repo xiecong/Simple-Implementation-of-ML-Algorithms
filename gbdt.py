@@ -20,6 +20,9 @@ class GBDT(object):
 		# tree0 is a constant
 		self.t0 = np.ones(self.y.shape[0]) * self.y.mean()
 
+	def get_importance(self):
+		return sum(tree.get_importance() for tree in self.forest)/self.tree_num
+
 	def linear_search(self, y, pred, f):
 		shrinkage = 1	
 		losses = [square_loss(y,pred+i*f/10) for i in range(1,21)]
@@ -42,10 +45,7 @@ class GBDT(object):
 			print("tree {} constructed, loss {}".format(i, square_loss(pred,self.y)))
 
 	def predict(self, x):
-		pred = self.t0
-		for i in range(self.tree_num):
-			pred -= np.array([self.forest[i].predict(xi) * self.rhos[i] for xi in x])
-		return pred
+		return self.t0 - sum(np.array([tree.predict(xi)for xi in x]) * rho for tree, rho in zip(self.forest, self.rhos))
 
 def main():
 	data = datasets.load_boston()
@@ -53,7 +53,8 @@ def main():
 	y = data.target
 	gbdt = GBDT(x, y)
 	gbdt.fit()
-	#print(np.c_[gbdt.predict(x), y])
-
+	print(gbdt.get_importance())
+	print(square_loss(gbdt.predict(x), y))
+	
 if __name__ == "__main__":
 	main()

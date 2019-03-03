@@ -6,6 +6,7 @@ For an easy understanding, most of the codes use toy datasets and within 100 lin
 * Naive Bayes
 * Decision Tree
 * Random Forest
+* Adaboost
 * Gradient Boost Decision Tree
 * XGBoost
 * Genetic Algorithm
@@ -14,9 +15,10 @@ For an easy understanding, most of the codes use toy datasets and within 100 lin
 
 Working on:
 * Support Vector Machine (SMO)
-* Adaboost
 * Hidden Markov Model
 * Beyasian Network
+* Factorization machines
+* Restricted Boltzmann machine (RBM)
 * Generative Adversarial Networks
 * Deep Q-Network (Reenforcement learning)
 * RNN
