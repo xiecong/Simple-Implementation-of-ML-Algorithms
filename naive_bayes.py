@@ -42,11 +42,7 @@ class NaiveBayes(object):
 				self.p_w[l][self.v_idx[w]] = np.log((p+1)/(len(flatten)+self.v_num))
 
 	def predict(self, x):
-		p = [0]*len(self.label)
-		for i, l in enumerate(self.label):
-			p[i] = self.p_c[i]
-			for w in x:
-				p[i] += self.p_w[i][self.v_idx[w]]
+		p = [self.p_c[i] + sum(self.p_w[i][self.v_idx[w]] for w in x) for i in range(len(self.label))]
 		return self.label[np.argmax(p)]
 
 def main():
