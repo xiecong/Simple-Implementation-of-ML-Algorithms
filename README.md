@@ -4,6 +4,7 @@ For an easy understanding, most of the codes use toy datasets and within 100 lin
 
 * Logistic Regression
 * Naive Bayes
+* Beyasian Network
 * Decision Tree
 * Random Forest
 * Adaboost
@@ -12,16 +13,15 @@ For an easy understanding, most of the codes use toy datasets and within 100 lin
 * Genetic Algorithm
 * Multilayer Perceptron
 * Convolutional Neural Network
+* Hidden Markov Model
 
 Working on:
 * Support Vector Machine (SMO)
-* Hidden Markov Model
-* Beyasian Network
 * Factorization machines
-* Restricted Boltzmann machine (RBM)
+* Restricted Boltzmann machine
 * Generative Adversarial Networks
-* Deep Q-Network (Reenforcement learning)
-* RNN
-* LSTM
+* Deep Q-Network (Reinforcement learning)
+* Recurrent neural network
+* Long short-term memory
 
 Feel free to use the code. Please contact me if you have any questions: xiecng@gmail.com
