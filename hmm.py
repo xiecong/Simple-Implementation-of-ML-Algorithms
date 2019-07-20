@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class HMM(object):
 	def __init__(self, o_num, s_num):
 		self.o_num = o_num
@@ -63,6 +64,7 @@ class HMM(object):
 			vpath = [vpath[prev[i]] + [i] for i in range(self.s_num)]
 		return vpath[np.argmax(v)]
 
+
 def seq_generator():
 	o_num, s_num = 2, 2
 	A = np.array([[0.4,0.6],[0.9,0.1]])
@@ -88,6 +90,7 @@ def seq_generator():
 	#print(np.array(q))
 	obs = np.array(v)
 	return obs,A,B,pi
+
 
 def main():
 	hmm1 = HMM(2, 2)

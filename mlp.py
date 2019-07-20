@@ -1,11 +1,10 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn import datasets
-
+from sklearn.datasets import load_digits
 ## a simpler implementation of multilayer perceptron with backpropagation training
 ## 3 hidden layers, each with 32 perceptrons
 ## this one use sigmoid in hiddn layer and softmax in output
 ## set batch size and epochs before start
+
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -15,23 +14,18 @@ def softmax(x):
     out = np.exp(x - np.max(x, axis=1).reshape(-1, 1))
     return out / (np.sum(out, axis=1).reshape(-1, 1) + eps)
 
+
 class MLP(object):
-    def __init__(self, x, y):
+    def __init__(self, n_features, n_labels):
         '''
         D_in is input dimension;
         H is hidden dimension; 
         D_out is output dimension.
         '''
-        self.label_num = len(np.unique(y))  
-        self.D_in, self.H1, self.H2, self.D_out = x.shape[1], 32, 32, self.label_num
-        self.train_num = x.shape[0]
+        self.D_in, self.H1, self.H2, self.D_out = n_features, 32, 32, n_labels
         self.epochs = 300
         self.batch_size = 15
         self.learning_rate = 1e-2
-
-        self.x = x 
-        self.y = np.zeros((self.train_num, self.label_num))
-        self.y[np.arange(self.train_num), y] = 1
 
         # Randomly initialize weights
         self.w1 = np.random.randn(self.D_in, self.H1)
@@ -42,8 +36,8 @@ class MLP(object):
         self.b2 = np.random.randn(1, self.H2)
         self.b3 = np.random.randn(1, self.D_out)
     
-    def loss(self, x):
-        return -(np.multiply(self.y, np.log(self.predict(x)))).mean()
+    def loss(self, x, y):
+        return -(np.multiply(y, np.log(self.predict(x)))).mean()
 
     def predict(self, x):
         eps = 1e-8
@@ -51,14 +45,18 @@ class MLP(object):
         a2 = sigmoid(a1.dot(self.w2) + self.b2)
         return softmax(a2.dot(self.w3) + self.b3)
 
-    def fit(self):
+    def fit(self, x_train, y_train):
+        train_num = x_train.shape[0]
+        labels = np.zeros((train_num, self.D_out))
+        labels[np.arange(train_num), y_train] = 1
+
         eps = 1e-8
         bvec = np.ones((1, self.batch_size))
         for epoch in range(self.epochs):
             #mini batch
-            permut=np.random.permutation(self.train_num//self.batch_size*self.batch_size).reshape(-1,self.batch_size)
+            permut=np.random.permutation(train_num//self.batch_size*self.batch_size).reshape(-1,self.batch_size)
             for b_idx in range(permut.shape[0]):
-                x, y = self.x[permut[b_idx,:]], self.y[permut[b_idx,:]]
+                x, y = x_train[permut[b_idx,:]], labels[permut[b_idx,:]]
                 
                 # Forward pass: compute predicted y
                 a1 = sigmoid(x.dot(self.w1) + self.b1)
@@ -84,16 +82,26 @@ class MLP(object):
                 self.b2 -= self.learning_rate * bvec.dot(grad_a2)
                 self.w3 -= self.learning_rate * grad_w3
                 self.b3 -= self.learning_rate * bvec.dot(grad_out)
-            print(self.loss(self.x))
+            print(self.loss(x_train, labels))
+
 
 def main():
-    data = datasets.load_digits()
+    data = load_digits()
     x = data.data
     y = data.target
-    mlp = MLP(x, y)
-    mlp.fit()   
-    res = mlp.predict(mlp.x)
-    print(sum(y[i]==np.argmax(o) for i, o in enumerate(res))/y.shape[0])
+
+    test_ratio = 0.2
+    test_split = np.random.uniform(0, 1, len(x))
+    train_x = x[test_split >= test_ratio]
+    test_x = x[test_split < test_ratio]
+    train_y = y[test_split >= test_ratio]
+    test_y = y[test_split < test_ratio]
+
+    mlp = MLP(train_x.shape[1], len(np.unique(y)) )
+    mlp.fit(train_x, train_y)
+    res = mlp.predict(test_x)
+    print(sum(yi==np.argmax(y_hat) for y_hat, yi in zip(res, test_y))/test_y.shape[0])
+
 
 if __name__ == "__main__":
     main()

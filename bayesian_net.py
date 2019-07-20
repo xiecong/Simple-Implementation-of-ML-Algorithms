@@ -1,7 +1,8 @@
 import numpy as np
-import pandas as pd
+from pandas import read_csv
 # an example of asia bayesian net:
 # https://www.eecis.udel.edu/~shatkay/Course/papers/Lauritzen1988.pdf
+
 
 class BayesianNet(object):
 	def __init__(self, names, edges, tables=None):
@@ -54,7 +55,8 @@ class BayesianNet(object):
 		return [1 - p_pos, p_pos]
 
 def get_asia_data(url):
-	return pd.read_csv(url).apply(lambda x: x == 'yes').astype(int).values
+	return read_csv(url).apply(lambda x: x == 'yes').astype(int).values
+
 
 def main():
 	names = 'ATSLBEXD'
@@ -67,6 +69,7 @@ def main():
 	for condition in [[], ['+A', '~S'], ['+A', '~S', '~D', '+X']]:
 		for c in ['T', 'L', 'B', 'E']:
 			print('p({}|{})={}'.format(c, ','.join(condition), bn.query(c, condition)))
+
 
 if __name__ == "__main__":
 	main()

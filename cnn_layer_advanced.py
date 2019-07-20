@@ -1,9 +1,9 @@
 import numpy as np
-
 # vectorization of the computation
 # will add batch normalization
 # will add dropout
 # will add padding to convolutional layer
+
 
 def relu(x):
 	return np.maximum(x, 0)
@@ -52,13 +52,14 @@ def col2img(col, in_shape, out_shape, k_size, stride):
 		img[b_idx, :, i:i+k_size, j:j+k_size] += col[row].reshape([in_c, k_size, k_size])
 	return img
 
+
 class Layer(object):
 	def __init__(self, has_param):
 		self.act_funcs = {'ReLU': relu, 'Sigmoid': sigmoid, 'Tanh': tanh, "Linear": linear}
 		self.dact_funcs = {'ReLU': drelu, 'Sigmoid': dsigmoid, 'Tanh': dtanh, "Linear": dlinear}
 		self.gradient_funcs = {'Adam':self.adam, "SGD": self.sgd}
-		self.learning_rate = 1e-2
-		self.weight_decay = 1e-4
+		self.learning_rate = 1e-3
+		self.weight_decay = 1e-5
 		self.has_param = has_param
 
 	def forward(self, x):
@@ -91,6 +92,7 @@ class Layer(object):
 	def sgd(self):
 		self.w -= self.learning_rate * self.grad_w
 		self.b -= self.learning_rate * self.grad_b
+
 
 class Conv(Layer):
 	def __init__(self, in_shape, k_size, k_num, act_type, stride=1):
@@ -125,6 +127,7 @@ class Conv(Layer):
 		self.input = None
 		return np.array(col2img(grad_out.dot(self.w.T), self.in_shape, self.out_shape, self.k_size, self.stride))
 
+
 class MaxPooling(Layer):
 	def __init__(self, in_shape, k_size, stride=None):
 		super(MaxPooling, self).__init__(has_param=False)
@@ -149,6 +152,7 @@ class MaxPooling(Layer):
 		out = col[range(col.shape[0]),max_idx].reshape(self.out_shape[1],self.out_shape[2],x.shape[0], self.in_shape[0])
 		return out.transpose(2, 3, 0, 1)
 
+
 class Softmax(Layer):
 	def __init__(self, w_size):
 		super(Softmax, self).__init__(has_param=False)
@@ -167,6 +171,7 @@ class Softmax(Layer):
 
 	def gradient(self, out, y):
 		return out - y
+
 
 class FullyConnect(Layer):
 	def __init__(self, in_shape, out_dim, act_type):

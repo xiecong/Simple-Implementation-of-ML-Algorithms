@@ -54,6 +54,7 @@ def dsigmoid(grad_a, act):
 def dtanh(grad_a, act):
     return np.multiply(grad_a, 1 - np.square(act))
 
+
 class MLP(object):
     def __init__(self, act_type, data_type, opt_type):
         act_funcs = {'ReLU': relu, 'Sigmoid': sigmoid, 'Tanh': tanh}
@@ -193,6 +194,12 @@ class MLP(object):
             if epoch%(self.epochs//3)==0:
                 boundary_vis(self, epoch)
 
-mlp = MLP('Tanh', 'spiral', 'RMSprop')
-mlp.fit()
-plt.show()
+
+def main():
+    mlp = MLP('Tanh', 'spiral', 'RMSprop')
+    mlp.fit()
+    plt.show()
+
+    
+if __name__ == "__main__":
+    main()

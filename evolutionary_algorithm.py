@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn import datasets
+from sklearn.datasets import load_digits
 import matplotlib.pyplot as plt
 '''
 this code uses EA to find the weights of an mlp which learns the iris dataset
@@ -18,6 +18,7 @@ def softmax(x):
     out = np.exp(x - np.max(x, axis=1).reshape(-1, 1))
     return out / (np.sum(out, axis=1).reshape(-1, 1) + eps)
 
+
 class NN(object):
 	def __init__(self, in_dim=None, h_dim=None, out_dim=None, w1=None, b1=None, w2=None, b2=None):
 		self.w1 = np.random.randn(in_dim, h_dim) if w1 is None else w1
@@ -33,12 +34,9 @@ class NN(object):
 		o1 = sigmoid(x.dot(self.w1) + self.b1)
 		return softmax(o1.dot(self.w2) + self.b2)
 
+
 class EvolutionaryAlgorithm(object):
-	def __init__(self, x, y):
-		self.x = x
-		self.label_num = len(np.unique(y))	
-		self.y = np.zeros((x.shape[0], self.label_num))
-		self.y[np.arange(x.shape[0]), y] = 1
+	def __init__(self):
 		self.pop_num = 50
 		self.elitism_num = self.pop_num//5
 		self.gen_num = 600
@@ -58,9 +56,9 @@ class EvolutionaryAlgorithm(object):
 		w[w > mutate_range] = mutate_range
 		w[w < -mutate_range] = -mutate_range
 
-	def evolve(self, old_pop):
+	def evolve(self, old_pop, x, y):
 		eps = 1e-8
-		fitness = np.array([1 / (p.loss(self.x, self.y)+eps) for p in old_pop])
+		fitness = np.array([1 / (p.loss(x, y)+eps) for p in old_pop])
 		fitness = fitness/fitness.sum()
 		top = np.argsort(fitness)[-1:-self.elitism_num-1:-1]
 		new_pop = [old_pop[idx] for idx in top]
@@ -81,16 +79,20 @@ class EvolutionaryAlgorithm(object):
 			self.mutate(b2)
 			new_pop.append(NN(w1=w1,b1=b1,w2=w2,b2=b2))
 
-		loss = [p.loss(self.x, self.y) for p in new_pop]
+		loss = [p.loss(x, y) for p in new_pop]
 		return new_pop, loss
 
-	def run(self):
-		population = [NN(in_dim=self.x.shape[1], h_dim=32, out_dim=self.label_num) for _ in range(self.pop_num)]
+	def run(self, x, y):
+		label_num = len(np.unique(y))
+		labels = np.zeros((x.shape[0], label_num))
+		labels[np.arange(x.shape[0]), y] = 1
+
+		population = [NN(in_dim=x.shape[1], h_dim=32, out_dim=label_num) for _ in range(self.pop_num)]
 		losslog = []
 		for i in range(self.gen_num):
-			population, loss = self.evolve(population)
+			population, loss = self.evolve(population, x, labels)
 			losslog.append([max(loss), np.mean(loss), min(loss)])
-			print("step{} max:{} min:{} mean:{}".format(i, max(loss), min(loss), np.mean(loss)))
+			print("Gen {} max:{} min:{} mean:{}".format(i, max(loss), min(loss), np.mean(loss)))
 		losslog = np.array(losslog)
 		plt.plot(losslog[:,0])
 		plt.plot(losslog[:,1])
@@ -100,14 +102,24 @@ class EvolutionaryAlgorithm(object):
 		plt.show()
 		return population[np.argmin(loss)]
 
+
 def main():
-	data = datasets.load_digits()
+	data = load_digits()
 	x = data.data
 	y = data.target
-	ea = EvolutionaryAlgorithm(x, y)
-	model = ea.run()
-	res = model.predict(x)	
-	print(sum(y[i] == np.argmax(o) for i, o in enumerate(res))/y.shape[0])
+
+	test_ratio = 0.2
+	test_split = np.random.uniform(0, 1, len(x))
+	train_x = x[test_split >= test_ratio]
+	test_x = x[test_split < test_ratio]
+	train_y = y[test_split >= test_ratio]
+	test_y = y[test_split < test_ratio]
+
+	ea = EvolutionaryAlgorithm()
+	model = ea.run(train_x, train_y)
+	res = model.predict(test_x)	
+	print(sum(yi == np.argmax(y_hat) for y_hat, yi in zip(res, test_y))/test_y.shape[0])
+
 
 if __name__ == "__main__":
     main()

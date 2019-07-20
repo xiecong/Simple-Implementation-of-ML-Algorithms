@@ -1,6 +1,6 @@
 # Simple-Implementation-of-ML-Algorithms
 My simplest implementations of common ML algorithms using only numpy.
-For an easy understanding, most of the codes use toy datasets and within 100 lines of codes.
+For an easy understanding, most of the codes implements only minimal versin of the algorithm and within 100 lines of codes.
 
 * Logistic Regression
 * Naive Bayes
@@ -11,9 +11,9 @@ For an easy understanding, most of the codes use toy datasets and within 100 lin
 * Gradient Boost Decision Tree
 * XGBoost
 * Genetic Algorithm
+* Hidden Markov Model
 * Multilayer Perceptron
 * Convolutional Neural Network
-* Hidden Markov Model
 
 Working on:
 * Support Vector Machine (SMO)

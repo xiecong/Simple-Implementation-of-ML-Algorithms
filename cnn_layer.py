@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def relu(x):
 	return np.maximum(x, 0)
 
@@ -24,6 +25,7 @@ def dtanh(grad_a, act):
 
 def dlinear(grad_a, act):
 	return grad_a
+
 
 class Layer(object):
 	def __init__(self, has_param):
@@ -64,6 +66,7 @@ class Layer(object):
 	def sgd(self):
 		self.w -= self.learning_rate * self.grad_w
 		self.b -= self.learning_rate * self.grad_b
+
 
 class Conv(Layer):
 	def __init__(self, in_shape, k_size, k_num, act_type, stride=1):
@@ -128,6 +131,7 @@ class Conv(Layer):
 		self.input = None
 		return np.array(grad_in)
 
+
 class MaxPooling(Layer):
 	def __init__(self, in_shape, k_size, stride=None):
 		super(MaxPooling, self).__init__(has_param=False)
@@ -176,6 +180,7 @@ class Softmax(Layer):
 
 	def gradient(self, out, y):
 		return out - y
+
 
 class FullyConnect(Layer):
 	def __init__(self, in_shape, out_dim, act_type):

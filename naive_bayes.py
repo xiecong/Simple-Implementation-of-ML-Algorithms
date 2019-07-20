@@ -1,6 +1,7 @@
 import numpy as np
-from sklearn import datasets
+from sklearn.datasets import fetch_20newsgroups
 import re
+
 
 def tokenize(documents, stop_words):
 	text = []
@@ -8,25 +9,25 @@ def tokenize(documents, stop_words):
 		letters_only = re.sub("[^a-zA-Z]", " ", doc)
 		words = letters_only.lower().split()             
 		text.append([w for w in words if not w in stop_words])
-	return text
+	return np.array(text)
+
 
 class NaiveBayes(object):
 	#multinominal NB model with laplace smoothing
 	#guassian can be used for numerical
-	def __init__(self, x, y):
-		self.x = x
-		self.y = y
+	def __init__(self):
 		self.p_w = {}
 		self.p_c = {}
 		self.vocabulary = []
 		self.v_num = 0
 
-	def fit(self):
-		self.label, p_c = np.unique(self.y, return_counts=True)
-		self.p_c = dict(zip(self.label, np.log(p_c/len(self.y))))
-		indexes = np.c_[np.array(self.y), np.arange(len(self.y))]
+	def fit(self, x, y):
+		n_data = len(y)
+		self.label, p_c = np.unique(y, return_counts=True)
+		self.p_c = dict(zip(self.label, np.log(p_c/n_data)))
+		indexes = np.c_[np.array(y), np.arange(n_data)]
 
-		self.vocabulary = np.unique([item for sublist in self.x for item in sublist])
+		self.vocabulary = np.unique([item for sublist in x for item in sublist])
 		self.v_num = len(self.vocabulary)
 		print("vocabulary length {}".format(self.v_num))
 		self.v_idx = dict(zip(self.vocabulary, np.arange(self.v_num)))
@@ -34,7 +35,7 @@ class NaiveBayes(object):
 		print("start fitting")
 		for l in self.label:
 			idxes = indexes[indexes[:,0]==l][:,1].astype(int)
-			corpus = [self.x[idx] for idx in idxes]
+			corpus = [x[idx] for idx in idxes]
 			flatten = [item for sublist in corpus for item in sublist]
 			self.p_w[l] = [np.log(1/(len(flatten)+self.v_num))]*self.v_num
 			words, pwl = np.unique(flatten, return_counts=True)
@@ -42,8 +43,10 @@ class NaiveBayes(object):
 				self.p_w[l][self.v_idx[w]] = np.log((p+1)/(len(flatten)+self.v_num))
 
 	def predict(self, x):
-		p = [self.p_c[i] + sum(self.p_w[i][self.v_idx[w]] for w in x) for i in range(len(self.label))]
+		eps = 1 / self.v_num
+		p = [self.p_c[i] + sum(self.p_w[i][self.v_idx[w]] if w in self.v_idx.keys() else eps for w in x) for i in range(len(self.label))]
 		return self.label[np.argmax(p)]
+
 
 def main():
 	stop_words = set(["i", "me", "my", "myself", "we", "our", "ours", "ourselves",
@@ -60,13 +63,22 @@ def main():
 		"how", "all", "any", "both", "each", "few", "more", "most", "other", "some",
 		"such", "no", "nor", "not", "only", "own", "same", "so", "than", "too",
 		"very", "s", "t", "can", "will", "just", "don", "should", "now"])
-	data = datasets.fetch_20newsgroups()
+	data = fetch_20newsgroups()
 	x = tokenize(data.data, stop_words)
 	y = data.target
-	nb = NaiveBayes(x, y)
-	nb.fit()
+
+	test_ratio = 0.2
+	test_split = np.random.uniform(0, 1, len(x))
+	train_x = x[test_split >= test_ratio]
+	test_x = x[test_split < test_ratio]
+	train_y = y[test_split >= test_ratio]
+	test_y = y[test_split < test_ratio]
+
+	nb = NaiveBayes()
+	nb.fit(train_x, train_y)
 	print("predicting")
-	print(sum(nb.predict(xi) == y[i] for i, xi in enumerate(x))/len(x))
+	print(sum(yi==nb.predict(xi) for xi, yi in zip(test_x, test_y))/test_y.shape[0])
+
 
 if __name__ == "__main__":
     main()

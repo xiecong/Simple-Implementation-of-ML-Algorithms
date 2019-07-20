@@ -1,33 +1,32 @@
 import numpy as np
-from sklearn import datasets
+from sklearn.datasets import load_breast_cancer
+
+
 class DecisionStump(object):
-	def __init__(self, x, y, w):
+	def __init__(self):
 		self.feature = None
 		self.value = None
 		self.l_value = None
 		self.r_value = None
-		self.x = x
-		self.y = y
-		self.w = w
 
-	def fit(self):
+	def fit(self, x, y, w):
 		min_err = np.float("inf")
-		for f in range(self.x.shape[1]):
-			split_values = np.unique(self.x[:,f].round(decimals=4))
+		for f in range(x.shape[1]):
+			split_values = np.unique(x[:,f].round(decimals=4))
 			for split_value in split_values:
-				l_value, r_value, err = self.split(f, split_value)
+				l_value, r_value, err = self.split(x, y, w, f, split_value)
 				if err < min_err:
 					min_err = err
 					self.l_value, self.r_value = l_value, r_value
 					self.feature, self.value = f, split_value
 		#print(self.feature, self.value, self.l_value, self.r_value)
 
-	def split(self, feature, value):
-		f_vec = self.x[:, feature]
-		l_value = np.sign(self.y[np.nonzero(f_vec<value)].sum())
-		r_value = np.sign(self.y[np.nonzero(f_vec>=value)].sum())
+	def split(self, x, y, w, feature, value):
+		f_vec = x[:, feature]
+		l_value = np.sign(y[np.nonzero(f_vec<value)].sum())
+		r_value = np.sign(y[np.nonzero(f_vec>=value)].sum())
 		pred = (f_vec<value)*l_value + (f_vec>=value)*r_value
-		error = (pred!=self.y).dot(self.w.T)
+		error = (pred!=y).dot(w.T)
 		return l_value, r_value, error
 
 	def predict(self, x):
@@ -36,40 +35,49 @@ class DecisionStump(object):
 		r_idxes = np.nonzero(f_vec>=self.value)
 		return (f_vec<self.value)*self.l_value + (f_vec>=self.value)*self.r_value
 
+
 class Adaboost(object):
-	def __init__(self, x, y):
-		self.esti_num = 10
+	def __init__(self):
+		self.esti_num = 20
 		self.estimators = []
 		self.alphas = []
-		self.x = x
-		self.y = y
-		self.w = np.ones(self.x.shape[0])/self.x.shape[0]
 
-	def fit(self):
+	def fit(self, x, y):
+		n_data = x.shape[0]
+		w = np.ones(x.shape[0]) / n_data
 		eps = 1e-16
-		prediction = np.zeros(self.x.shape[0])
+		prediction = np.zeros(n_data)
 		for i in range(self.esti_num):
-			self.estimators.append(DecisionStump(self.x, self.y, self.w))
-			self.estimators[i].fit()
-			pred_i = self.estimators[i].predict(self.x)
-			error_i = (pred_i!=self.y).dot(self.w.T)
+			self.estimators.append(DecisionStump())
+			self.estimators[i].fit(x, y, w)
+			pred_i = self.estimators[i].predict(x)
+			error_i = (pred_i!=y).dot(w.T)
 			self.alphas.append(np.log((1.0-error_i)/(error_i+eps))/2)
-			self.w = np.multiply(self.w, np.exp(self.alphas[i]*2*(pred_i!=self.y)-1))
-			self.w = self.w / self.w.sum()
+			w = np.multiply(w, np.exp(self.alphas[i]*2*(pred_i!=y)-1))
+			w = w / w.sum()
 
 			prediction += pred_i * self.alphas[i]
-			print("Tree {} constructed, acc {}".format(i, (np.sign(prediction)==self.y).sum()/self.x.shape[0]))
+			print("Tree {} constructed, acc {}".format(i, (np.sign(prediction)==y).sum()/n_data))
 
 	def predict(self, x):
 		return np.sign(sum(esti.predict(x) * alpha for esti, alpha in zip(self.estimators, self.alphas)))
 
+
 def main():
-	data = datasets.load_breast_cancer()
+	data = load_breast_cancer()
 	x = data.data
 	y = data.target*2-1
-	adaboost = Adaboost(x, y)
-	adaboost.fit()
-	print((adaboost.predict(x)==y).sum()/x.shape[0])
+	test_ratio = 0.2
+	test_split = np.random.uniform(0, 1, len(x))
+	train_x = x[test_split >= test_ratio]
+	test_x = x[test_split < test_ratio]
+	train_y = y[test_split >= test_ratio]
+	test_y = y[test_split < test_ratio]
+
+	adaboost = Adaboost()
+	adaboost.fit(train_x, train_y)
+	print((adaboost.predict(test_x)==test_y).sum()/test_x.shape[0])
+
 
 if __name__ == "__main__":
     main()
