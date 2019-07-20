@@ -6,7 +6,7 @@ from decision_tree import DecisionTree
 class RandomForest(object):
 	def __init__(self):
 		self.max_depth = 5
-		self.tree_num = 20
+		self.tree_num = 50
 		self.forest = []
 
 	def fit(self, x, y):
@@ -19,8 +19,8 @@ class RandomForest(object):
 			print("fitting tree #{}".format(i))
 			f = np.random.randint(feat_num, size=n_feat)
 			idx = np.random.randint(data_num, size=n_sample)
-			dt = DecisionTree('Gini impurity', self.max_depth)
-			dt.fit(x[idx], y[idx])
+			dt = DecisionTree(metric_type='Gini impurity', depth=self.max_depth)
+			dt.fit(x[idx], y[idx], feature_set=f)
 			self.forest.append(dt)
 
 	def predict(self, x):

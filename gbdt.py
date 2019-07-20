@@ -17,14 +17,14 @@ class GBDT(object):
 		self.forest = []
 		self.rhos = []
 		self.t0 = 0
+		self.shrinkage = 0.5
 
 	def get_importance(self):
 		return sum(tree.get_importance() for tree in self.forest)/self.tree_num
 
 	def _linear_search(self, y, pred, f):
-		shrinkage = 1	
-		losses = [square_loss(y, pred+i*f/10) for i in range(1,21)]
-		return shrinkage * (np.argmin(losses)+1)/10
+		losses = [square_loss(y, pred-i*f/20) for i in range(1,21)]
+		return (np.argmin(losses)+1)/20
 
 	def fit(self, x, y):
 		self.t0 = y.mean()  # t0, which is a constant
@@ -36,12 +36,12 @@ class GBDT(object):
 			f = np.array([self.forest[i].predict(xi) for xi in x])
 			# find best learning rate
 			self.rhos.append(self._linear_search(y, pred, f))
-			pred -= f * self.rhos[i]
+			pred -= self.shrinkage * f * self.rhos[i]
 			# for categorical dataset, use cross entropy loss
 			print("tree {} constructed, loss {}".format(i, square_loss(y, pred)))
 
 	def predict(self, x):
-		return self.t0 - sum(np.array([tree.predict(xi)for xi in x]) * rho for tree, rho in zip(self.forest, self.rhos))
+		return self.t0 - np.array([sum(tree.predict(xi) * rho * self.shrinkage for tree, rho in zip(self.forest, self.rhos)) for xi in x])
 
 
 def main():
@@ -49,7 +49,7 @@ def main():
 	x = data.data
 	y = data.target
 
-	test_ratio = 0.2
+	test_ratio = 0.1
 	test_split = np.random.uniform(0, 1, len(x))
 	train_x = x[test_split >= test_ratio]
 	test_x = x[test_split < test_ratio]
@@ -59,6 +59,7 @@ def main():
 	gbdt = GBDT()
 	gbdt.fit(train_x, train_y)
 	print(gbdt.get_importance())
+	print(square_loss(train_y, gbdt.predict(train_x)))
 	print(square_loss(test_y, gbdt.predict(test_x)))
 
 

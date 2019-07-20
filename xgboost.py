@@ -27,9 +27,9 @@ class XGBoostRegressionTree(DecisionTree):
 class XGBoost(object):
 	def __init__(self):
 		self.max_depth = 4
-		self.tree_num = 10
+		self.tree_num = 20
 		self.forest = []
-		self.shrinkage = 1
+		self.shrinkage = 0.5
 
 	def get_importance(self):
 		return sum(tree.get_importance() for tree in self.forest)/self.tree_num
@@ -62,6 +62,7 @@ def main():
 	xgboost = XGBoost()
 	xgboost.fit(train_x, train_y)
 	print(xgboost.get_importance())
+	print(square_loss(train_y, xgboost.predict(train_x)))
 	print(square_loss(test_y, xgboost.predict(test_x)))
 
 

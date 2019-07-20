@@ -13,8 +13,7 @@ def impurity(data):
 	return 1 - np.sum(np.square(p))
 
 def variance(data):
-	avg = data[:,-1].mean()
-	return np.square(avg - data[:,-1]).sum()
+	return data[:,-1].var()
 
 
 class DecisionTree(object):
@@ -54,7 +53,7 @@ class DecisionTree(object):
 		if(depth >= self.depth): return self.gen_leaf(data)
 		p_score = self.metric(data)
 		max_gain, f_id, value, splt_l, splt_r = self.gain_threshold, -1, 0, None, None
-		for f in self.features:
+		for f in self.feature_set:
 			split_values = np.unique(data[:,f].round(decimals=4))
 			for split_value in split_values:
 				l_child = data[np.nonzero(data[:,f]<split_value)]
@@ -76,11 +75,10 @@ class DecisionTree(object):
 				   }
 		else: return self.gen_leaf(data)
 
-	def fit(self, x, y):
+	def fit(self, x, y, feature_set=None):
 		self.labels = np.unique(y)
-		self.features = np.arange(x.shape[1])
+		self.feature_set = np.arange(x.shape[1]) if feature_set is None else feature_set
 		self.importance = np.zeros(x.shape[1])
-
 		self.tree = self.split(np.c_[x, y], 0, len(x))
 
 	def predict(self, sample, node=None):
