@@ -11,10 +11,11 @@ def squared_loss_gradient(y, pred):
 
 class FactorizationMachines(object):
 	def __init__(self):
-		self.learning_rate = 1e-14
+		self.learning_rate = 0.5
 		self.embedding_dim = 1
-		self.lmbda = 0.005 # regularization coefficient
+		self.lmbda = 0.001 # regularization coefficient
 		self.reg = 2
+		self.eps = 1e-12
 
 	def fit(self, x, y):
 		n_data = x.shape[0]
@@ -23,19 +24,40 @@ class FactorizationMachines(object):
 		self.w = np.random.randn(n_dim)
 		self.v = np.random.randn(self.embedding_dim, n_dim)
 
-		for i in range(1000):
-			grad = squared_loss_gradient(y, self.predict(x))
-			self.w0 -= self.learning_rate * grad.sum()
-			self.w -= self.learning_rate * grad.T.dot(x)
+		self.mom_w0, self.cache_w0 = 0, 0
+		self.mom_w, self.cache_w = np.zeros(n_dim), np.zeros(n_dim)
+		self.mom_v, self.cache_v = np.zeros(self.v.shape), np.zeros(self.v.shape)
 
+		for i in range(5000):
+			grad = squared_loss_gradient(y, self.predict(x))
 			squares = np.repeat(np.square(x), self.embedding_dim, axis=0).reshape(n_data, -1, n_dim)
 			vx = [np.matmul(vkx.reshape(-1,1), xi.reshape(1,-1)) for vkx, xi in zip(x.dot(self.v.T), x)]
-
-			grad_v = np.array(vx) - squares
-			self.v -= self.learning_rate * grad.T.dot(grad_v.reshape(n_data, -1)).reshape(self.v.shape)
+			grad_v = grad.T.dot((np.array(vx) - squares).reshape(n_data, -1)).reshape(self.v.shape)
+			self.adam(grad.sum(), grad.T.dot(x), grad_v, i+1)
 			self.regularization()
-			if i % 10 == 0:
+			if i % 100 == 0:
 				print('loss {}'.format(squared_loss(self.predict(x), y)))
+
+	def sgd(self, grad_w0, grad_w, grad_v):  # use a very small learning rate for sgd, e.g., 1e-14
+			self.w0 -= self.learning_rate * grad_w0
+			self.w -= self.learning_rate * grad_w
+			self.v -= self.learning_rate * grad_v
+
+	def adam(self, grad_w0, grad_w, grad_v, i):
+		beta1 = 0.9
+		beta2 = 0.999
+		alpha = self.learning_rate
+		self.mom_w0 = beta1 * self.mom_w0 + (1 - beta1) * grad_w0
+		self.cache_w0 = beta2 * self.cache_w0 + (1 - beta2) * np.square(grad_w0)
+		self.w0 -= alpha * self.mom_w0 / (1 - beta1**i) / (np.sqrt(self.cache_w0 / (1 - beta2**i)) + self.eps)
+		
+		self.mom_w = beta1 * self.mom_w + (1 - beta1) * grad_w
+		self.cache_w = beta2 * self.cache_w + (1 - beta2) * np.square(grad_w)
+		self.w -= alpha * self.mom_w / (1 - beta1**i) / (np.sqrt(self.cache_w / (1 - beta2**i)) + self.eps)
+
+		self.mom_v = beta1 * self.mom_v + (1 - beta1) * grad_v
+		self.cache_v = beta2 * self.cache_v + (1 - beta2) * np.square(grad_v)
+		self.v -= alpha * self.mom_v / (1 - beta1**i) / (np.sqrt(self.cache_v / (1 - beta2**i)) + self.eps)
 
 	def regularization(self):
 		if(self.reg==1):
