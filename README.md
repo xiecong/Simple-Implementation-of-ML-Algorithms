@@ -2,7 +2,9 @@
 My simplest implementations of common ML algorithms using only numpy.
 For an easy understanding, most of the codes implements only minimal versin of the algorithm and within 100 lines of codes.
 
+* Linear Regression
 * Logistic Regression
+* Factorization machines
 * Naive Bayes
 * Beyasian Network
 * Decision Tree
@@ -17,7 +19,6 @@ For an easy understanding, most of the codes implements only minimal versin of t
 
 Working on:
 * Support Vector Machine (SMO)
-* Factorization machines
 * Restricted Boltzmann machine
 * Generative Adversarial Networks
 * Deep Q-Network (Reinforcement learning)

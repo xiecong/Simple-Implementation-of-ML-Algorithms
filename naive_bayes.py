@@ -43,6 +43,9 @@ class NaiveBayes(object):
 				self.p_w[l][self.v_idx[w]] = np.log((p+1)/(len(flatten)+self.v_num))
 
 	def predict(self, x):
+		return np.array([self.predict_sample(xi) for xi in x])
+
+	def predict_sample(self, x):
 		eps = 1 / self.v_num
 		p = [self.p_c[i] + sum(self.p_w[i][self.v_idx[w]] if w in self.v_idx.keys() else eps for w in x) for i in range(len(self.label))]
 		return self.label[np.argmax(p)]
@@ -77,7 +80,8 @@ def main():
 	nb = NaiveBayes()
 	nb.fit(train_x, train_y)
 	print("predicting")
-	print(sum(yi==nb.predict(xi) for xi, yi in zip(test_x, test_y))/test_y.shape[0])
+	print(sum(nb.predict(train_x) == train_y)/train_x.shape[0])
+	print(sum(nb.predict(test_x) == test_y)/test_y.shape[0])
 
 
 if __name__ == "__main__":

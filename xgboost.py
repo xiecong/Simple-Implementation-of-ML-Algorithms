@@ -1,10 +1,14 @@
 import numpy as np
-from sklearn.datasets import load_boston
+from sklearn.datasets import fetch_california_housing
 from decision_tree import DecisionTree
+# TODO classification
 
 
-def square_loss(y, pred):
-	return np.square(pred-y).mean()/2
+def squared_loss(y, pred):
+	return np.square(pred - y).mean() / 2
+
+def squared_loss_gradient(y, pred):
+	return pred - y
 
 
 class XGBoostRegressionTree(DecisionTree):
@@ -15,17 +19,18 @@ class XGBoostRegressionTree(DecisionTree):
 		self.metric = self.score
 
 	def gen_leaf(self, data):
-		return {'label': -data[:,-1].sum()/(data.shape[0]+self.lambd)}
+		return {'label': data[:,-1].sum() / (data.shape[0] + self.lambd)}
 
 	def score(self, data):
-		return np.square(data[:,-1].sum())/(data.shape[0]+self.lambd)
+		return np.square(data[:,-1].sum()) / (data.shape[0] + self.lambd)
 
 	def split_gain(self, p_score, l_child, r_child):
-		return self.metric(l_child) + self.metric(r_child) - p_score - self.gamma
+		return (self.metric(l_child) + self.metric(r_child) - p_score) / 2 - self.gamma
 
 # importance for each feature
 class XGBoost(object):
-	def __init__(self):
+	def __init__(self, regression=True):
+		self.regression=regression
 		self.max_depth = 4
 		self.tree_num = 20
 		self.forest = []
@@ -35,35 +40,32 @@ class XGBoost(object):
 		return sum(tree.get_importance() for tree in self.forest)/self.tree_num
 
 	def fit(self, x, y):
-		pred = np.zeros(y.shape)
+		pred = 0
 		for i in range(self.tree_num):
-			gradient = pred - y
+			grad = squared_loss_gradient(y, pred)
 			self.forest.append(XGBoostRegressionTree(max_depth=self.max_depth))
-			self.forest[i].fit(x, gradient)
-			pred += np.array([self.forest[i].predict(xi) * self.shrinkage for xi in x])
-			print("tree {} constructed, loss {}".format(i, square_loss(pred, y)))
+			self.forest[i].fit(x, grad)
+			pred -= self.forest[i].predict(x) * self.shrinkage
+			print("tree {} constructed, loss {}".format(i, squared_loss(y, pred)))
 
 	def predict(self, x):
-		return np.array([sum(tree.predict(xi) * self.shrinkage for tree in self.forest) for xi in x])
+		return -np.array([tree.predict(x) * self.shrinkage for tree in self.forest]).sum(axis=0)
 
 
 def main():
-	data = load_boston()
-	x = data.data
-	y = data.target
-
+	data = fetch_california_housing(data_home='data')
 	test_ratio = 0.2
-	test_split = np.random.uniform(0, 1, len(x))
-	train_x = x[test_split >= test_ratio]
-	test_x = x[test_split < test_ratio]
-	train_y = y[test_split >= test_ratio]
-	test_y = y[test_split < test_ratio]
+	test_split = np.random.uniform(0, 1, len(data.data))
+	train_x = data.data[test_split >= test_ratio]
+	test_x = data.data[test_split < test_ratio]
+	train_y = data.target[test_split >= test_ratio]
+	test_y = data.target[test_split < test_ratio]
 
 	xgboost = XGBoost()
 	xgboost.fit(train_x, train_y)
 	print(xgboost.get_importance())
-	print(square_loss(train_y, xgboost.predict(train_x)))
-	print(square_loss(test_y, xgboost.predict(test_x)))
+	print(squared_loss(train_y, xgboost.predict(train_x)))
+	print(squared_loss(test_y, xgboost.predict(test_x)))
 
 
 if __name__ == "__main__":

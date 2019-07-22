@@ -16,34 +16,32 @@ class RandomForest(object):
 		n_sample = data_num//5
 
 		for i in range(self.tree_num):
-			print("fitting tree #{}".format(i))
 			f = np.random.randint(feat_num, size=n_feat)
 			idx = np.random.randint(data_num, size=n_sample)
 			dt = DecisionTree(metric_type='Gini impurity', depth=self.max_depth)
 			dt.fit(x[idx], y[idx], feature_set=f)
 			self.forest.append(dt)
+			print("Tree #{} constructed, acc {}".format(i, (self.predict(x)==y).sum()/x.shape[0]))
 
 	def predict(self, x):
-		res = [tree.predict(x) for tree in self.forest]
-		(values, counts) = np.unique(res, return_counts=True)
-		return values[np.argmax(counts)]#dict(zip(values, counts/counts.sum()))
+		preds = np.array([tree.predict(x) for tree in self.forest]).T
+		value_counts = [np.unique(pred, return_counts=True) for pred in preds]
+		return np.array([values[np.argmax(counts)] for (values, counts) in value_counts])
 
 
 def main():
 	data = load_digits()
-	x = data.data
-	y = data.target
-
 	test_ratio = 0.2
 	test_split = np.random.uniform(0, 1, len(x))
-	train_x = x[test_split >= test_ratio]
-	test_x = x[test_split < test_ratio]
-	train_y = y[test_split >= test_ratio]
-	test_y = y[test_split < test_ratio]
+	train_x = data.data[test_split >= test_ratio]
+	test_x = data.data[test_split < test_ratio]
+	train_y = data.target[test_split >= test_ratio]
+	test_y = data.target[test_split < test_ratio]
 
 	rf = RandomForest()
 	rf.fit(train_x, train_y)
-	print(sum(rf.predict(xi) == yi for xi, yi in zip(test_x, test_y))/test_x.shape[0])
+	print((rf.predict(train_x) == train_y).sum()/train_x.shape[0])
+	print((rf.predict(test_x) == test_y).sum()/test_x.shape[0])
 
 
 if __name__ == "__main__":

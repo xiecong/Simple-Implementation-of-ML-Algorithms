@@ -56,8 +56,8 @@ class DecisionTree(object):
 		for f in self.feature_set:
 			split_values = np.unique(data[:,f].round(decimals=4))
 			for split_value in split_values:
-				l_child = data[np.nonzero(data[:,f]<split_value)]
-				r_child = data[np.nonzero(data[:,f]>=split_value)]
+				l_child = data[data[:,f]<split_value]
+				r_child = data[data[:,f]>=split_value]
 				if(len(l_child)*len(r_child)==0):
 					continue
 				gain = self.split_gain(p_score, l_child, r_child)
@@ -81,12 +81,15 @@ class DecisionTree(object):
 		self.importance = np.zeros(x.shape[1])
 		self.tree = self.split(np.c_[x, y], 0, len(x))
 
-	def predict(self, sample, node=None):
+	def predict(self, x):
+		return np.array([self.predict_sample(xi) for xi in x])
+
+	def predict_sample(self, sample, node=None):
 		if node is None:
 			node = self.tree
 		if 'f_id' in node:
 			child = node['left'] if(sample[node['f_id']] < node['value']) else node['right']
-			return self.predict(sample, child)
+			return self.predict_sample(sample, child)
 		else:
 			return node['label']
 
@@ -110,8 +113,8 @@ def main():
 	dt.fit(train_x, train_y)
 	dt.print_tree()
 	print(dt.importance)
-	print(sum(dt.predict(xi)==yi for xi, yi in zip(train_x, train_y)) / len(train_x))
-	print(sum(dt.predict(xi)==yi for xi, yi in zip(test_x, test_y)) / len(test_x))
+	print(sum(dt.predict(train_x)==train_y) / len(train_x))
+	print(sum(dt.predict(test_x)==test_y) / len(test_x))
 
 
 if __name__ == "__main__":

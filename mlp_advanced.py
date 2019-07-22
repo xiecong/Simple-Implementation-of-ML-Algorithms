@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+from decision_boundary_vis import gen_spiral_data, evol_boundary_vis
 '''
 This is a simple implementation of multilayer perceptron with backpropagation training
 Implemented features:
@@ -10,30 +10,6 @@ Architecture: layer configuarations in self.layers
 Hyperparameters: set learning rate, batch size and epochs before start
 '''
 
-def gen_xor_data(train_num):
-    x = 2 * np.random.random((train_num, 2)) - 1
-    y = np.array([[1] if(xi[0]*xi[1]>0) else [-1] for xi in x])
-    return x, y
-
-def gen_spiral_data(train_num):
-    r = np.arange(train_num)/train_num
-    c = np.arange(train_num)%2
-    t = 1.75 * r * 2 * np.pi + c * np.pi;
-    y = c.reshape(train_num,1)*2-1
-    x = np.c_[r * np.sin(t),r * np.cos(t)]
-    return x, y
-
-# visualize decision boundary change
-def boundary_vis(mlp, epoch):
-    clabel = ['red' if yi[0] < 0 else 'blue' for yi in mlp.y]
-    loss = np.square(mlp.predict(mlp.x) - mlp.y).sum() / 2
-    plt.subplot(2, 2, epoch/(mlp.epochs//3)+1)
-    xx, yy = np.meshgrid(np.linspace(-1, 1, 50), np.linspace(-1, 1, 50))
-    zz = mlp.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
-    plt.title("epoch {}, loss={}".format(epoch, loss))
-    plt.contourf(xx, yy, zz, levels=np.linspace(zz.min(), zz.max(), 40), cmap=plt.cm.RdBu)
-    plt.contour(xx, yy, zz, levels=[0], colors='darkred')
-    plt.scatter(mlp.x[:, 0], mlp.x[:, 1], c=clabel, s=10, edgecolors='k')
 
 def relu(x):
     return np.maximum(x, 0)
@@ -56,20 +32,18 @@ def dtanh(grad_a, act):
 
 
 class MLP(object):
-    def __init__(self, act_type, data_type, opt_type):
+    def __init__(self, act_type, opt_type, layers):
         act_funcs = {'ReLU': relu, 'Sigmoid': sigmoid, 'Tanh': tanh}
         dacts = {'ReLU': drelu, 'Sigmoid': dsigmoid, 'Tanh': dtanh}
-        gen_data = {'spiral': gen_spiral_data, 'xor': gen_xor_data}
         optimizers = {'SGD': self.sgd, 'Momentum': self.momentum, 'Nesterov': self.nesterov, 
                       'AdaGrad': self.adagrad, 'RMSprop': self.rmsprop, 'Adam': self.adam}
 
         self.reg = 2 #0=none, 1=L1, 2=L2 regularization
-        self.lmbda = 0.1 # regularization coefficient
+        self.lmbda = 1e-4 # regularization coefficient
         self.gamma = 0.9
         self.eps = 1e-8
-        self.train_num, self.epochs, self.batch_size = 300, 400, 10
-        self.learning_rate = 0.3#0.003#
-        layers = [2,8,7,1]
+        self.epochs, self.batch_size = 200, 16
+        self.learning_rate = 0.2
         self.layer_num = len(layers)-1
 
         self.afunc = act_funcs[act_type]
@@ -88,8 +62,6 @@ class MLP(object):
             self.cache_w[i] = np.zeros_like(self.w[i])
             self.mom_b[i] = np.zeros_like(self.b[i])
             self.cache_b[i] = np.zeros_like(self.b[i])
-
-        self.x, self.y = gen_data[data_type](self.train_num)
 
 
     def sgd(self, grad_w, grad_b):
@@ -147,7 +119,7 @@ class MLP(object):
     def regularization(self):
         if(self.reg == 0):
             return
-        alpha = self.learning_rate * self.lmbda / self.train_num
+        alpha = self.learning_rate * self.lmbda
         for i in range(self.layer_num):
             if(self.reg==1):
                 self.w[i] -= alpha * np.sign(self.w[i])
@@ -160,23 +132,24 @@ class MLP(object):
             act = self.afunc(act.dot(self.w[i]) + self.b[i])
         return act.dot(self.w[self.layer_num-1]) + self.b[self.layer_num-1]
 
-    def fit(self):
+    def fit(self, x, y):
+        train_num = x.shape[0]
         l_num = self.layer_num
         bvec = np.ones((1, self.batch_size))
         for epoch in range(self.epochs):
             #mini batch
-            permut=np.random.permutation(self.train_num).reshape(-1,self.batch_size)
+            permut=np.random.permutation(train_num//self.batch_size*self.batch_size).reshape(-1,self.batch_size)
             for b_idx in range(permut.shape[0]):
                 # Forward pass: compute predicted out
                 act = [np.empty]*(l_num+1)
-                act[0] = self.x[permut[b_idx,:]]
+                act[0] = x[permut[b_idx,:]]
                 for i in range(1, l_num):
                     act[i] = self.afunc(act[i-1].dot(self.w[i-1]) + self.b[i-1])
                 act[l_num] = act[l_num-1].dot(self.w[l_num-1]) + self.b[l_num-1]
 
                 # Backprop to compute gradients of weights & activaions
                 grad_a, grad_w, grad_b = [np.empty]*(l_num+1), [np.empty]*l_num, [np.empty]*l_num
-                grad_a[l_num] = act[l_num] - self.y[permut[b_idx,:]]
+                grad_a[l_num] = act[l_num] - y[permut[b_idx,:]]
                 grad_w[l_num-1] = act[l_num-1].T.dot(grad_a[l_num])
                 grad_b[l_num-1] = bvec.dot(grad_a[l_num])
 
@@ -191,15 +164,14 @@ class MLP(object):
                 self.opt(grad_w, grad_b)
 
             # Compute loss and visualization
-            if epoch%(self.epochs//3)==0:
-                boundary_vis(self, epoch)
+            if (epoch+1)%50==0:
+                evol_boundary_vis(self, x, y, epoch, [2, 2, (epoch+1)//50])
 
 
 def main():
-    mlp = MLP('Tanh', 'spiral', 'RMSprop')
-    mlp.fit()
-    plt.show()
-
+    x, y = gen_spiral_data(512)
+    mlp = MLP('Tanh', 'Adam', layers=[2,8,7,1])
+    mlp.fit(x, y)
     
 if __name__ == "__main__":
     main()

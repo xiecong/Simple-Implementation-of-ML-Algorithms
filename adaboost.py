@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.datasets import load_breast_cancer
+from decision_boundary_vis import gen_spiral_data, evol_boundary_vis
 
 
 class DecisionStump(object):
@@ -57,7 +58,7 @@ class Adaboost(object):
 			w = w / w.sum()
 
 			prediction += pred_i * self.alphas[i]
-			print("Tree {} constructed, acc {}".format(i, (np.sign(prediction)==y).sum()/n_data))
+			print("Tree {} constructed, acc {}".format(i, (np.sign(prediction) == y).sum()/n_data))
 
 	def predict(self, x):
 		return np.sign(sum(esti.predict(x) * alpha for esti, alpha in zip(self.estimators, self.alphas)))
@@ -76,6 +77,7 @@ def main():
 
 	adaboost = Adaboost()
 	adaboost.fit(train_x, train_y)
+	print((adaboost.predict(train_x)==train_y).sum()/train_x.shape[0])
 	print((adaboost.predict(test_x)==test_y).sum()/test_x.shape[0])
 
 

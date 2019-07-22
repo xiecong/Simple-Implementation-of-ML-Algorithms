@@ -23,8 +23,7 @@ class MLP(object):
         D_out is output dimension.
         '''
         self.D_in, self.H1, self.H2, self.D_out = n_features, 32, 32, n_labels
-        self.epochs = 300
-        self.batch_size = 15
+        self.epochs, self.batch_size = 50, 16
         self.learning_rate = 1e-2
 
         # Randomly initialize weights
@@ -47,16 +46,13 @@ class MLP(object):
 
     def fit(self, x_train, y_train):
         train_num = x_train.shape[0]
-        labels = np.zeros((train_num, self.D_out))
-        labels[np.arange(train_num), y_train] = 1
-
         eps = 1e-8
         bvec = np.ones((1, self.batch_size))
         for epoch in range(self.epochs):
             #mini batch
             permut=np.random.permutation(train_num//self.batch_size*self.batch_size).reshape(-1,self.batch_size)
             for b_idx in range(permut.shape[0]):
-                x, y = x_train[permut[b_idx,:]], labels[permut[b_idx,:]]
+                x, y = x_train[permut[b_idx,:]], y_train[permut[b_idx,:]]
                 
                 # Forward pass: compute predicted y
                 a1 = sigmoid(x.dot(self.w1) + self.b1)
@@ -82,25 +78,24 @@ class MLP(object):
                 self.b2 -= self.learning_rate * bvec.dot(grad_a2)
                 self.w3 -= self.learning_rate * grad_w3
                 self.b3 -= self.learning_rate * bvec.dot(grad_out)
-            print(self.loss(x_train, labels))
+            print(self.loss(x_train, y_train))
 
 
 def main():
     data = load_digits()
-    x = data.data
-    y = data.target
-
     test_ratio = 0.2
-    test_split = np.random.uniform(0, 1, len(x))
-    train_x = x[test_split >= test_ratio]
-    test_x = x[test_split < test_ratio]
-    train_y = y[test_split >= test_ratio]
-    test_y = y[test_split < test_ratio]
+    test_split = np.random.uniform(0, 1, len(data.data))
+    labels = np.zeros((len(data.data), 10))
+    labels[np.arange(len(data.data)), data.target] = 1
+    train_x = data.data[test_split >= test_ratio]
+    test_x = data.data[test_split < test_ratio]
+    train_y = labels[test_split >= test_ratio]
+    test_y = labels[test_split < test_ratio]
 
-    mlp = MLP(train_x.shape[1], len(np.unique(y)) )
+    mlp = MLP(train_x.shape[1], len(np.unique(data.target)) )
     mlp.fit(train_x, train_y)
-    res = mlp.predict(test_x)
-    print(sum(yi==np.argmax(y_hat) for y_hat, yi in zip(res, test_y))/test_y.shape[0])
+    print(sum(np.argmax(mlp.predict(train_x), axis=1)==np.argmax(train_y, axis=1))/train_y.shape[0])
+    print(sum(np.argmax(mlp.predict(test_x), axis=1)==np.argmax(test_y, axis=1))/test_y.shape[0])
 
 
 if __name__ == "__main__":
