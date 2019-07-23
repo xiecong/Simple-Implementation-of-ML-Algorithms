@@ -2,20 +2,39 @@
 My simplest implementations of common ML algorithms using only numpy.
 For an easy understanding, most of the codes implements only minimal versin of the algorithm and within 100 lines of codes.
 
-* Ridge Regression
-* Logistic Regression
-* Factorization machines
-* Naive Bayes
-* Beyasian Network
-* Decision Tree
-* Random Forest
-* Adaboost
-* Gradient Boost Decision Tree
-* XGBoost
-* Genetic Algorithm
-* Hidden Markov Model
-* Multilayer Perceptron
-* Convolutional Neural Network
+* Regression Models
+    * Ridge Regression
+    * Logistic Regression
+    * Factorization Machines
+
+* Bayes Models
+    * Naive Bayes
+    * Beyasian Network
+
+* Tree Models and Ensemble Learning
+    * Decision Tree
+    * Random Forest
+    * Adaboost
+    * Gradient Boost Decision Tree
+    * XGBoost
+
+* Deep Learning
+    * Multilayer Perceptron
+    * Convolutional Neural Network
+
+* Optimization Algorithms (See implementations in Regression and MLP)
+	* Stochastic Gradient Descent
+	* Gradient Descent with Momentum
+	* Nesterov Momentum
+	* AdaGrad
+	* RMSProp
+	* Adam
+
+* Search
+    * Genetic Algorithm
+
+* Other Models
+    * Hidden Markov Model
 
 Working on:
 * Support Vector Machine (SMO)
@@ -24,5 +43,6 @@ Working on:
 * Deep Q-Network (Reinforcement learning)
 * Recurrent neural network
 * Long short-term memory
+* k-Nearest Neighbors
 
 Feel free to use the code. Please contact me if you have any questions: xiecng@gmail.com
