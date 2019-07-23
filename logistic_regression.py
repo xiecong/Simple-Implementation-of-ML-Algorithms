@@ -10,7 +10,6 @@ class LogisticRegression(object):
 	def __init__(self):
 		self.learning_rate = 0.01
 
-
 	def loss(self, x, y): #using cross entropy as loss function
 		eps = 1e-8
 		h = self.predict(x)

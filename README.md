@@ -2,7 +2,7 @@
 My simplest implementations of common ML algorithms using only numpy.
 For an easy understanding, most of the codes implements only minimal versin of the algorithm and within 100 lines of codes.
 
-* Linear Regression
+* Ridge Regression
 * Logistic Regression
 * Factorization machines
 * Naive Bayes

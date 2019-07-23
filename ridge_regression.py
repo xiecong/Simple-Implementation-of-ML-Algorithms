@@ -34,7 +34,7 @@ class RidgeRegression(object):
 
 		for i in range(5000):
 			grad = squared_loss_gradient(y, self.predict(x))
-			self.adam(grad.T.dot(x), grad.sum())
+			self.adam(grad.dot(x), grad.sum(), i+1)
 			self.regularization()
 			if i % 100 == 0:
 				print('loss {}'.format(squared_loss(self.predict(x), y)))
@@ -51,16 +51,16 @@ class RidgeRegression(object):
 		self.w -= self.learning_rate *grad_w
 		self.b -= self.learning_rate * grad_b
 
-	def adam(self, grad_w, grad_b):
+	def adam(self, grad_w, grad_b, i):
 		beta1 = 0.9
 		beta2 = 0.999
 		alpha = self.learning_rate
 		self.mom_w = beta1 * self.mom_w + (1 - beta1) * grad_w
 		self.cache_w = beta2 * self.cache_w + (1 - beta2) * np.square(grad_w)
-		self.w -= alpha * self.mom_w / (np.sqrt(self.cache_w) + self.eps)
+		self.w -= alpha * self.mom_w / (1 - beta1**i) / (np.sqrt(self.cache_w / (1 - beta2**i)) + self.eps)
 		self.mom_b = beta1 * self.mom_b + (1 - beta1) * grad_b
 		self.cache_b = beta2 * self.cache_b + (1 - beta2) * np.square(grad_b)
-		self.b -= alpha * self.mom_b / (np.sqrt(self.cache_b) + self.eps)
+		self.b -= alpha * self.mom_b / (1 - beta1**i) / (np.sqrt(self.cache_b / (1 - beta2**i)) + self.eps)
 
 	def regularization(self):
 		if(self.reg==1):
