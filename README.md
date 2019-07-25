@@ -30,14 +30,15 @@ For an easy understanding, most of the codes implements only minimal versin of t
 	* RMSProp
 	* Adam
 
-* Search
-    * Genetic Algorithm
+* Genetic Algorithm
 
-* Other Models
-    * Hidden Markov Model
+* Support Vector Machine (SMO)
+
+* Hidden Markov Model
+
+Also see classification decision boundary visualization in decision_boundary_vis.py
 
 Working on:
-* Support Vector Machine (SMO)
 * Restricted Boltzmann machine
 * Generative Adversarial Networks
 * Deep Q-Network (Reinforcement learning)

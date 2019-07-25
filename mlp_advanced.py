@@ -1,5 +1,5 @@
 import numpy as np
-from decision_boundary_vis import gen_spiral_data, evol_boundary_vis
+from sklearn.datasets import load_digits
 '''
 This is a simple implementation of multilayer perceptron with backpropagation training
 Implemented features:
@@ -30,25 +30,42 @@ def dsigmoid(grad_a, act):
 def dtanh(grad_a, act):
     return np.multiply(grad_a, 1 - np.square(act))
 
+def softmax(x):
+    eps = 1e-8
+    out = np.exp(x - np.max(x, axis=1).reshape(-1, 1))
+    return out / (np.sum(out, axis=1).reshape(-1, 1) + eps)
+
+def linear(x):
+    return x
+
+def cross_entropy(pred, y):
+    return -(np.multiply(y, np.log(pred + 1e-4))).mean()
+
+def squared_error(pred, y):
+    return np.square(pred - y).mean() / 2
 
 class MLP(object):
-    def __init__(self, act_type, opt_type, layers):
+    def __init__(self, act_type, opt_type, layers, epochs=50, regression=False, learning_rate=0.1, lmbda=1e-2):
         act_funcs = {'ReLU': relu, 'Sigmoid': sigmoid, 'Tanh': tanh}
         dacts = {'ReLU': drelu, 'Sigmoid': dsigmoid, 'Tanh': dtanh}
         optimizers = {'SGD': self.sgd, 'Momentum': self.momentum, 'Nesterov': self.nesterov, 
                       'AdaGrad': self.adagrad, 'RMSprop': self.rmsprop, 'Adam': self.adam}
 
         self.reg = 2 #0=none, 1=L1, 2=L2 regularization
-        self.lmbda = 1e-4 # regularization coefficient
+        self.lmbda = lmbda # regularization coefficient
         self.gamma = 0.9
         self.eps = 1e-8
-        self.epochs, self.batch_size = 200, 16
-        self.learning_rate = 0.2
+        self.epochs, self.batch_size = epochs, 16
+        self.learning_rate = learning_rate
         self.layer_num = len(layers)-1
+        self.n_labels = layers[-1]
+        self.regression = regression
+        self.output = linear if self.regression else softmax
+        self.loss = squared_error if self.regression else cross_entropy
 
         self.afunc = act_funcs[act_type]
         self.dact = dacts[act_type]
-        self.opt = optimizers[opt_type]
+        self.optimize = optimizers[opt_type]
 
         # Randomly initialize weights
         self.w, self.b = [np.empty]*self.layer_num, [np.empty]*self.layer_num
@@ -130,12 +147,19 @@ class MLP(object):
         act = x
         for i in range(self.layer_num-1):
             act = self.afunc(act.dot(self.w[i]) + self.b[i])
-        return act.dot(self.w[self.layer_num-1]) + self.b[self.layer_num-1]
+        return self.output(act.dot(self.w[self.layer_num-1]) + self.b[self.layer_num-1])
 
-    def fit(self, x, y):
+    def fit(self, x, labels):
         train_num = x.shape[0]
         l_num = self.layer_num
         bvec = np.ones((1, self.batch_size))
+
+        if self.regression:
+            y = labels
+        else:
+            y = np.zeros((train_num, self.n_labels))
+            y[np.arange(train_num), labels] = 1
+
         for epoch in range(self.epochs):
             #mini batch
             permut=np.random.permutation(train_num//self.batch_size*self.batch_size).reshape(-1,self.batch_size)
@@ -145,7 +169,7 @@ class MLP(object):
                 act[0] = x[permut[b_idx,:]]
                 for i in range(1, l_num):
                     act[i] = self.afunc(act[i-1].dot(self.w[i-1]) + self.b[i-1])
-                act[l_num] = act[l_num-1].dot(self.w[l_num-1]) + self.b[l_num-1]
+                act[l_num] = self.output(act[l_num-1].dot(self.w[l_num-1]) + self.b[l_num-1])
 
                 # Backprop to compute gradients of weights & activaions
                 grad_a, grad_w, grad_b = [np.empty]*(l_num+1), [np.empty]*l_num, [np.empty]*l_num
@@ -161,17 +185,24 @@ class MLP(object):
 
                 # Update weights
                 self.regularization()
-                self.opt(grad_w, grad_b)
-
-            # Compute loss and visualization
-            if (epoch+1)%50==0:
-                evol_boundary_vis(self, x, y, epoch, [2, 2, (epoch+1)//50])
+                self.optimize(grad_w, grad_b)
+            print('epoch {}, loss: {}'.format(epoch, self.loss(self.predict(x), y)))
 
 
 def main():
-    x, y = gen_spiral_data(512)
-    mlp = MLP('Tanh', 'Adam', layers=[2,8,7,1])
-    mlp.fit(x, y)
+    data = load_digits()
+    test_ratio = 0.2
+    test_split = np.random.uniform(0, 1, len(data.data))
+    train_x = data.data[test_split >= test_ratio]
+    test_x = data.data[test_split < test_ratio]
+    train_y = data.target[test_split >= test_ratio]
+    test_y = data.target[test_split < test_ratio]
+
+    mlp = MLP('ReLU', 'Adam', layers=[train_x.shape[1], 32, 32, len(np.unique(data.target))])
+    mlp.fit(train_x, train_y)
+    print(sum(np.argmax(mlp.predict(train_x), axis=1) == train_y)/train_y.shape[0])
+    print(sum(np.argmax(mlp.predict(test_x), axis=1) == test_y)/test_y.shape[0])
+
     
 if __name__ == "__main__":
     main()

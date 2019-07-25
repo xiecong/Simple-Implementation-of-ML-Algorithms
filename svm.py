@@ -41,11 +41,11 @@ class SVM(object):
 
 	def fit(self, x, y):  # SMO
 		n_data = x.shape[0]
-		self.supp_w = np.ones(x.shape[0])
+		self.supp_w = np.zeros(x.shape[0])
 		self.supp_x = x
-		self.b = 0
+		self.b = 1
 		alpha = np.zeros(n_data)
-		for i in range(500):
+		for i in range(1000):
 			# select alpha1, alpha2
 			u = np.sign(self.predict(x))
 			idx1, idx2 = self._select_pair_by_max_violations(u, y, alpha)
@@ -71,12 +71,12 @@ class SVM(object):
 
 			# update model
 			alpha[[idx1, idx2]] = [alpha1, alpha2]
-			sv = np.array([True]) if alpha.sum() == 0 else (alpha!=0)
+			sv = (alpha!=0)
 			self.supp_w = alpha[sv] * y[sv]
 			self.supp_x = x[sv]
 			if i % 100 == 0:
 				print(self.loss(alpha, x, y))
-		print('support vectors:', x[sv])
+		print('support vectors:', self.supp_x)
 
 	def predict(self, x):
 		return self.supp_w.dot(self.kernel(self.supp_x, x)).flatten() + self.b

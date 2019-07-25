@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.datasets import load_breast_cancer
-from decision_boundary_vis import gen_spiral_data, evol_boundary_vis
+# TODO output score/probability, and use other weak classifier
 
 
 class DecisionStump(object):
@@ -37,9 +37,9 @@ class DecisionStump(object):
 		return (f_vec<self.value)*self.l_value + (f_vec>=self.value)*self.r_value
 
 
-class Adaboost(object):
-	def __init__(self):
-		self.esti_num = 20
+class AdaBoost(object):
+	def __init__(self, esti_num=20):
+		self.esti_num = esti_num
 		self.estimators = []
 		self.alphas = []
 
@@ -75,7 +75,7 @@ def main():
 	train_y = y[test_split >= test_ratio]
 	test_y = y[test_split < test_ratio]
 
-	adaboost = Adaboost()
+	adaboost = AdaBoost()
 	adaboost.fit(train_x, train_y)
 	print((adaboost.predict(train_x)==train_y).sum()/train_x.shape[0])
 	print((adaboost.predict(test_x)==test_y).sum()/test_x.shape[0])

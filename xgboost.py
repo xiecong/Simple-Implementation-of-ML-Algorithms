@@ -29,10 +29,10 @@ class XGBoostRegressionTree(DecisionTree):
 
 # importance for each feature
 class XGBoost(object):
-	def __init__(self, regression=True):
+	def __init__(self, regression=True, max_depth=4, tree_num=20):
 		self.regression=regression
-		self.max_depth = 4
-		self.tree_num = 20
+		self.max_depth = max_depth
+		self.tree_num = tree_num
 		self.forest = []
 		self.shrinkage = 0.5
 

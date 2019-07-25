@@ -44,10 +44,14 @@ class MLP(object):
         a2 = sigmoid(a1.dot(self.w2) + self.b2)
         return softmax(a2.dot(self.w3) + self.b3)
 
-    def fit(self, x_train, y_train):
+    def fit(self, x_train, labels):
         train_num = x_train.shape[0]
         eps = 1e-8
         bvec = np.ones((1, self.batch_size))
+        
+        y_train = np.zeros((train_num, self.D_out))
+        y_train[np.arange(train_num), labels] = 1
+
         for epoch in range(self.epochs):
             #mini batch
             permut=np.random.permutation(train_num//self.batch_size*self.batch_size).reshape(-1,self.batch_size)
@@ -78,24 +82,22 @@ class MLP(object):
                 self.b2 -= self.learning_rate * bvec.dot(grad_a2)
                 self.w3 -= self.learning_rate * grad_w3
                 self.b3 -= self.learning_rate * bvec.dot(grad_out)
-            print(self.loss(x_train, y_train))
+            print('epoch {}, loss: {}'.format(epoch, self.loss(x_train, y_train)))
 
 
 def main():
     data = load_digits()
     test_ratio = 0.2
     test_split = np.random.uniform(0, 1, len(data.data))
-    labels = np.zeros((len(data.data), 10))
-    labels[np.arange(len(data.data)), data.target] = 1
     train_x = data.data[test_split >= test_ratio]
     test_x = data.data[test_split < test_ratio]
-    train_y = labels[test_split >= test_ratio]
-    test_y = labels[test_split < test_ratio]
+    train_y = data.target[test_split >= test_ratio]
+    test_y = data.target[test_split < test_ratio]
 
     mlp = MLP(train_x.shape[1], len(np.unique(data.target)) )
     mlp.fit(train_x, train_y)
-    print(sum(np.argmax(mlp.predict(train_x), axis=1)==np.argmax(train_y, axis=1))/train_y.shape[0])
-    print(sum(np.argmax(mlp.predict(test_x), axis=1)==np.argmax(test_y, axis=1))/test_y.shape[0])
+    print(sum(np.argmax(mlp.predict(train_x), axis=1) == train_y)/train_y.shape[0])
+    print(sum(np.argmax(mlp.predict(test_x), axis=1) == test_y)/test_y.shape[0])
 
 
 if __name__ == "__main__":

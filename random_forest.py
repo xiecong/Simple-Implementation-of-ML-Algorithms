@@ -1,17 +1,18 @@
 import numpy as np
 from sklearn.datasets import load_digits
 from decision_tree import DecisionTree
+# TODO output score/probability
 
 
 class RandomForest(object):
-	def __init__(self):
-		self.max_depth = 5
-		self.tree_num = 50
+	def __init__(self, tree_num=50, max_depth=5):
+		self.max_depth = max_depth
+		self.tree_num = tree_num
 		self.forest = []
 
 	def fit(self, x, y):
 		feat_num = x.shape[1]
-		n_feat = int(np.sqrt(feat_num))
+		n_feat = int(np.ceil(np.sqrt(feat_num)))
 		data_num = x.shape[0]
 		n_sample = data_num//5
 

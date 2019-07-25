@@ -21,9 +21,9 @@ def cross_entropy_gradient(y, pred):
 
 
 class FactorizationMachines(object):
-	def __init__(self, regression):
-		self.learning_rate = 0.01
-		self.embedding_dim = 5
+	def __init__(self, regression, learning_rate=0.01, embedding_dim=5):
+		self.learning_rate = learning_rate
+		self.embedding_dim = embedding_dim
 		self.lmbda = 0.001 # regularization coefficient
 		self.reg = 2
 		self.eps = 1e-12

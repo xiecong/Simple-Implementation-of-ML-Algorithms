@@ -15,10 +15,10 @@ def absolute_loss_gradient(y, pred):
 
 
 class GBDT(object):
-	def __init__(self, regression=True):
+	def __init__(self, regression=True, tree_num=20, max_depth=4):
 		self.regression=regression
-		self.max_depth = 4
-		self.tree_num = 20
+		self.max_depth = max_depth
+		self.tree_num = tree_num
 		self.forest = []
 		self.rhos = np.ones(self.tree_num)
 		self.t0 = 0
