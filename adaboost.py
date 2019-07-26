@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.datasets import load_breast_cancer
-# TODO output score/probability, and use other weak classifier
 
 
 class DecisionStump(object):
@@ -20,20 +19,18 @@ class DecisionStump(object):
 					min_err = err
 					self.l_value, self.r_value = l_value, r_value
 					self.feature, self.value = f, split_value
-		#print(self.feature, self.value, self.l_value, self.r_value)
+		#print(self.feature, self.value, self.l_value, self.r_value, w)
 
 	def split(self, x, y, w, feature, value):
 		f_vec = x[:, feature]
-		l_value = np.sign(y[np.nonzero(f_vec<value)].sum())
-		r_value = np.sign(y[np.nonzero(f_vec>=value)].sum())
+		l_value = np.sign(y[f_vec<value].sum())
+		r_value = np.sign(y[f_vec>=value].sum())
 		pred = (f_vec<value)*l_value + (f_vec>=value)*r_value
-		error = (pred!=y).dot(w.T)
+		error = np.abs(pred-y).dot(w.T)
 		return l_value, r_value, error
 
 	def predict(self, x):
 		f_vec = x[:, self.feature]
-		l_idxes = np.nonzero(f_vec<self.value)
-		r_idxes = np.nonzero(f_vec>=self.value)
 		return (f_vec<self.value)*self.l_value + (f_vec>=self.value)*self.r_value
 
 
@@ -54,31 +51,30 @@ class AdaBoost(object):
 			pred_i = self.estimators[i].predict(x)
 			error_i = (pred_i!=y).dot(w.T)
 			self.alphas.append(np.log((1.0-error_i)/(error_i+eps))/2)
-			w = np.multiply(w, np.exp(self.alphas[i]*2*(pred_i!=y)-1))
+			w = w * np.exp(self.alphas[i]*(2*(pred_i!=y)-1))
 			w = w / w.sum()
 
 			prediction += pred_i * self.alphas[i]
 			print("Tree {} constructed, acc {}".format(i, (np.sign(prediction) == y).sum()/n_data))
 
 	def predict(self, x):
-		return np.sign(sum(esti.predict(x) * alpha for esti, alpha in zip(self.estimators, self.alphas)))
+		return sum(esti.predict(x) * alpha for esti, alpha in zip(self.estimators, self.alphas))
 
 
 def main():
 	data = load_breast_cancer()
-	x = data.data
 	y = data.target*2-1
 	test_ratio = 0.2
-	test_split = np.random.uniform(0, 1, len(x))
-	train_x = x[test_split >= test_ratio]
-	test_x = x[test_split < test_ratio]
+	test_split = np.random.uniform(0, 1, len(data.data))
+	train_x = data.data[test_split >= test_ratio]
+	test_x = data.data[test_split < test_ratio]
 	train_y = y[test_split >= test_ratio]
 	test_y = y[test_split < test_ratio]
 
 	adaboost = AdaBoost()
 	adaboost.fit(train_x, train_y)
-	print((adaboost.predict(train_x)==train_y).sum()/train_x.shape[0])
-	print((adaboost.predict(test_x)==test_y).sum()/test_x.shape[0])
+	print((np.sign(adaboost.predict(train_x))==train_y).sum()/train_x.shape[0])
+	print((np.sign(adaboost.predict(test_x))==test_y).sum()/test_x.shape[0])
 
 
 if __name__ == "__main__":

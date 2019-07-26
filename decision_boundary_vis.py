@@ -34,44 +34,39 @@ def boundary_vis_plots(model, x, y, subplot=[1, 1, 1]):
 	xx, yy = np.meshgrid(np.linspace(-1, 1, 50), np.linspace(-1, 1, 50))
 	zz = model.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape) - 0.5
 	plt.contourf(xx, yy, zz, levels=np.linspace(zz.min(), zz.max(), 40), cmap=plt.cm.RdBu)
-	plt.contour(xx, yy, zz, levels=[0], colors='darkred')
+	plt.contour(xx, yy, zz, levels=[(zz.min() + zz.max()) / 2], colors='darkred')
 	plt.scatter(x[:, 0], x[:, 1], c=clabel, s=10, edgecolors='k')
 	if subplot[2] == subplot[0] * subplot[1]: 
 		plt.show()
 
+
 def main():
-	x, y = gen_spiral(1000)
+	for i, data_loader in enumerate([gen_linear, gen_circle, gen_xor, gen_spiral]): 
+		x, y = data_loader(256)
 
-	test_ratio = 0.2
-	test_split = np.random.uniform(0, 1, len(x))
-	train_x = x[test_split >= test_ratio]
-	test_x = x[test_split < test_ratio]
-	train_y = y[test_split >= test_ratio]
-	test_y = y[test_split < test_ratio]
+		svm = SVM()
+		svm.fit(x, y)
+		boundary_vis_plots(svm, x, y, subplot=[4, 6, 6 * i + 1])
 
-	svm = SVM()
-	svm.fit(train_x, train_y)
-	boundary_vis_plots(svm, test_x, test_y, subplot=[1, 6, 1])
+		mlp = MLP('Tanh', 'Adam', layers=[2, 8, 7, 1], epochs=200, regression=True, learning_rate=0.5, lmbda=1e-4)
+		mlp.fit(x, y.reshape(-1, 1))
+		boundary_vis_plots(mlp, x, y, subplot=[4, 6, 6 * i + 2])
 
-	mlp = MLP('Tanh', 'Adam', layers=[2, 8, 7, 1], epochs=200, regression=True, learning_rate=0.5, lmbda=1e-4)
-	mlp.fit(train_x, train_y.reshape(-1, 1))
-	boundary_vis_plots(mlp, test_x, test_y, subplot=[1, 6, 2])
+		xgboost = XGBoost(tree_num=20, max_depth=3)
+		xgboost.fit(x, y)
+		boundary_vis_plots(xgboost, x, y, subplot=[4, 6, 6 * i + 3])
 
-	xgboost = XGBoost(tree_num=20, max_depth=3)
-	xgboost.fit(train_x, train_y)
-	boundary_vis_plots(xgboost, test_x, test_y, subplot=[1, 6, 3])
+		rf = RandomForest(tree_num=50, max_depth=4, regression=True)
+		rf.fit(x, y)
+		boundary_vis_plots(rf, x, y, subplot=[4, 6, 6 * i + 4])
 
-	rf = RandomForest(tree_num=20, max_depth=3)
-	rf.fit(train_x, train_y)
-	boundary_vis_plots(rf, test_x, test_y, subplot=[1, 6, 4])
+		adaboost = AdaBoost(esti_num=50)
+		adaboost.fit(x, y)
+		boundary_vis_plots(adaboost, x, y, subplot=[4, 6, 6 * i + 5])
 
-	adaboost = AdaBoost(esti_num=50)
-	adaboost.fit(train_x, train_y)
-	boundary_vis_plots(adaboost, test_x, test_y, subplot=[1, 6, 5])
-
-	fm = FactorizationMachines(regression=True, learning_rate=1, embedding_dim=1)
-	fm.fit(train_x, train_y)
-	boundary_vis_plots(fm, test_x, test_y, subplot=[1, 6, 6])
+		fm = FactorizationMachines(regression=True, learning_rate=1, embedding_dim=1)
+		fm.fit(x, y)
+		boundary_vis_plots(fm, x, y, subplot=[4, 6, 6 * i + 6])
 
 
 if __name__ == "__main__":

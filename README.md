@@ -37,6 +37,7 @@ For an easy understanding, most of the codes implements only minimal versin of t
 * Hidden Markov Model
 
 Also see classification decision boundary visualization in decision_boundary_vis.py
+![supervised_model](supervised_model.png)
 
 Working on:
 * Restricted Boltzmann machine
