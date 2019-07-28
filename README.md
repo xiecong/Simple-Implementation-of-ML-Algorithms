@@ -30,9 +30,11 @@ For an easy understanding, most of the codes implements only minimal versin of t
 	* RMSProp
 	* Adam
 
-* Genetic Algorithm
+* k-Nearest Neighbors
 
 * Support Vector Machine (SMO)
+
+* Genetic Algorithm
 
 * Hidden Markov Model
 
@@ -45,6 +47,5 @@ Working on:
 * Deep Q-Network (Reinforcement learning)
 * Recurrent neural network
 * Long short-term memory
-* k-Nearest Neighbors
 
 Feel free to use the code. Please contact me if you have any questions: xiecng@gmail.com

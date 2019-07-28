@@ -16,6 +16,7 @@ class RandomForest(object):
 		n_feat = int(np.sqrt(feat_num))
 		data_num = x.shape[0]
 		n_sample = data_num//5
+		self.labels = np.unique(y)
 
 		for i in range(self.tree_num):
 			f = np.random.randint(feat_num, size=n_feat)
@@ -26,16 +27,18 @@ class RandomForest(object):
 			if self.regression:
 				print("Tree #{} constructed, squared loss {}".format(i, np.square(self.predict(x)-y).sum()))
 			else:
-				print("Tree #{} constructed, acc {}".format(i, (self.predict(x)==y).sum()/x.shape[0]))
+				print("Tree #{} constructed, acc {}".format(i, (np.argmax(self.predict(x), axis=1)==y).sum()/x.shape[0]))
 
 	def predict(self, x):
 		preds = np.array([tree.predict(x) for tree in self.forest]).T
 		if self.regression:
 			return preds.mean(axis=1)
 		else:
-			res = np.unique
-			value_counts = [np.unique(pred, return_counts=True) for pred in preds]
-			return np.array([values[np.argmax(counts)] for (values, counts) in value_counts])
+			y = np.zeros((x.shape[0], len(self.labels)))
+			for i, pred in enumerate(preds):
+				value, counts = np.unique(pred, return_counts=True)
+				y[i][value.astype(int)] = counts / counts.sum()
+			return y
 
 
 def main():
@@ -49,8 +52,8 @@ def main():
 
 	rf = RandomForest()
 	rf.fit(train_x, train_y)
-	print((rf.predict(train_x) == train_y).sum()/train_x.shape[0])
-	print((rf.predict(test_x) == test_y).sum()/test_x.shape[0])
+	print((np.argmax(rf.predict(train_x), axis=1) == train_y).sum()/train_x.shape[0])
+	print((np.argmax(rf.predict(test_x), axis=1) == test_y).sum()/test_x.shape[0])
 
 
 if __name__ == "__main__":
