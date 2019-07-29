@@ -18,14 +18,14 @@ class XGBoostRegressionTree(DecisionTree):
 		super(XGBoostRegressionTree, self).__init__(metric_type="Gini impurity", depth=max_depth, regression=True)
 		self.metric = self.score
 
-	def gen_leaf(self, data):
-		return {'label': data[:,-1].sum() / (data.shape[0] + self.lambd)}
+	def gen_leaf(self, y, w):
+		return {'label': y.dot(w) / (sum(w) + self.lambd)}
 
-	def score(self, data):
-		return np.square(data[:,-1].sum()) / (data.shape[0] + self.lambd)
+	def score(self, y, w):
+		return np.square(y.dot(w)) / (sum(w) + self.lambd)
 
-	def split_gain(self, p_score, l_child, r_child):
-		return (self.metric(l_child) + self.metric(r_child) - p_score) / 2 - self.gamma
+	def split_gain(self, p_score, l_y, r_y, l_w, r_w):
+		return (self.metric(l_y, l_w) + self.metric(r_y, r_w) - p_score) / 2 - self.gamma
 
 # importance for each feature
 class XGBoost(object):

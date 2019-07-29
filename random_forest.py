@@ -13,7 +13,7 @@ class RandomForest(object):
 
 	def fit(self, x, y):
 		feat_num = x.shape[1]
-		n_feat = int(np.sqrt(feat_num))
+		n_feat = int(np.ceil(np.sqrt(feat_num)))
 		data_num = x.shape[0]
 		n_sample = data_num//5
 		self.labels = np.unique(y)

@@ -1,41 +1,10 @@
 import numpy as np
 from sklearn.datasets import load_breast_cancer
-
-
-class DecisionStump(object):
-	def __init__(self):
-		self.feature = None
-		self.value = None
-		self.l_value = None
-		self.r_value = None
-
-	def fit(self, x, y, w):
-		min_err = np.float("inf")
-		for f in range(x.shape[1]):
-			split_values = np.unique(x[:,f].round(decimals=4))
-			for split_value in split_values:
-				l_value, r_value, err = self.split(x, y, w, f, split_value)
-				if err < min_err:
-					min_err = err
-					self.l_value, self.r_value = l_value, r_value
-					self.feature, self.value = f, split_value
-		#print(self.feature, self.value, self.l_value, self.r_value, w)
-
-	def split(self, x, y, w, feature, value):
-		f_vec = x[:, feature]
-		l_value = np.sign(y[f_vec<value].sum())
-		r_value = np.sign(y[f_vec>=value].sum())
-		pred = (f_vec<value)*l_value + (f_vec>=value)*r_value
-		error = np.abs(pred-y).dot(w.T)
-		return l_value, r_value, error
-
-	def predict(self, x):
-		f_vec = x[:, self.feature]
-		return (f_vec<self.value)*self.l_value + (f_vec>=self.value)*self.r_value
+from decision_tree import DecisionTree
 
 
 class AdaBoost(object):
-	def __init__(self, esti_num=20):
+	def __init__(self, esti_num=10):
 		self.esti_num = esti_num
 		self.estimators = []
 		self.alphas = []
@@ -46,7 +15,7 @@ class AdaBoost(object):
 		eps = 1e-16
 		prediction = np.zeros(n_data)
 		for i in range(self.esti_num):
-			self.estimators.append(DecisionStump())
+			self.estimators.append(DecisionTree(metric_type='Gini impurity', depth=2))
 			self.estimators[i].fit(x, y, w)
 			pred_i = self.estimators[i].predict(x)
 			error_i = (pred_i!=y).dot(w.T)

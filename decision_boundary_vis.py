@@ -49,8 +49,8 @@ def main():
 		(kNearestNeighbor, {'k': 5}),
 		(FactorizationMachines, {'learning_rate': 1, 'embedding_dim': 1}),
 		(SVM, {}),
-		(AdaBoost, {'esti_num': 50}),
-		(RandomForest, {'tree_num': 50, 'max_depth': 4}),
+		(AdaBoost, {'esti_num': 10}),
+		(RandomForest, {'tree_num': 20, 'max_depth': 3}),
 		(XGBoost, {'tree_num': 20, 'max_depth': 3}),
 		(MLP, {'act_type': 'Tanh', 'opt_type': 'Adam', 'layers': [2, 8, 7, 2], 'epochs': 200, 'learning_rate': 0.5, 'lmbda': 1e-4})
 	]
