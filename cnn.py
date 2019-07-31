@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.datasets import fetch_openml
 from cnn_layer_advanced import *
 #This implements Lenet-4, test on MNIST dataset
+# To do: drop out, batch normalization
 
 
 class CNN(object):

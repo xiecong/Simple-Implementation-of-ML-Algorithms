@@ -5,10 +5,7 @@ from sklearn.datasets import load_iris
 
 def weighted_histo(y, w):
 	y_unique = np.unique(y)
-	weighted_sum = np.zeros(len(y_unique))
-	for i in range(len(y_unique)):
-		weighted_sum[i] = w[y==y_unique[i]].sum()
-	return weighted_sum / w.sum()
+	return [w[y==yi].sum() for yi in y_unique] / w.sum()
 
 def entropy(y, w):
 	p = weighted_histo(y, w)
@@ -47,9 +44,7 @@ class DecisionTree(object):
 
 	def gen_leaf(self, y, w):
 		if not self.regression:
-			weighted_sum = np.zeros(len(self.labels))
-			for i in range(len(self.labels)):
-				weighted_sum[i] = w[y==self.labels[i]].sum()
+			weighted_sum = [w[y==li].sum() for li in self.labels]
 			node = dict(zip(self.labels, weighted_sum))
 			node['label'] = self.labels[np.argmax(weighted_sum)]
 		else:
@@ -109,12 +104,10 @@ class DecisionTree(object):
 
 def main():
 	data = load_iris()
-	test_ratio = 0.3
+	test_ratio = 0.2
 	test_split = np.random.uniform(0, 1, len(data.data))
-	train_x = data.data[test_split >= test_ratio]
-	test_x = data.data[test_split < test_ratio]
-	train_y = data.target[test_split >= test_ratio]
-	test_y = data.target[test_split < test_ratio]
+	train_x, test_x = data.data[test_split >= test_ratio], data.data[test_split < test_ratio]
+	train_y, test_y = data.target[test_split >= test_ratio], data.target[test_split < test_ratio]
 
 	dt = DecisionTree(metric_type='Gini impurity', depth=4)
 	dt.fit(train_x, train_y)

@@ -35,10 +35,8 @@ def main():
 	y = data.target*2-1
 	test_ratio = 0.2
 	test_split = np.random.uniform(0, 1, len(data.data))
-	train_x = data.data[test_split >= test_ratio]
-	test_x = data.data[test_split < test_ratio]
-	train_y = y[test_split >= test_ratio]
-	test_y = y[test_split < test_ratio]
+	train_x, test_x = data.data[test_split >= test_ratio], data.data[test_split < test_ratio]
+	train_y, test_y = y[test_split >= test_ratio], y[test_split < test_ratio]
 
 	adaboost = AdaBoost()
 	adaboost.fit(train_x, train_y)
