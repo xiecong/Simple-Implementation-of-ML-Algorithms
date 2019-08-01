@@ -44,6 +44,8 @@ Implemented algorithms:
 
 * Deep Learning Architecture
     * Multilayer Perceptron
+    * Deep Belief Network
+        * Restricted Boltzman Machine
     * Convolutional Neural Network
         * Fast layers and vectorized operations
         * WIP: drop out, batch normalization
@@ -87,10 +89,9 @@ Implemented algorithms:
     * Prediction by Viterbi
 
 Work in progress:
-* Deep Belief Network
 * Recurrent neural network
 * Long short-term memory
 * Generative Adversarial Networks
 * Deep Q-Network (Reinforcement learning)
 
-Feel free to use the code. Please contact me if you have any questions: xiecng@gmail.com
+Feel free to use the code. Please contact me if you have any question: xiecng [at] gmail.com

@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.datasets import load_digits
 ## a simpler implementation of multilayer perceptron with backpropagation training
-## 3 hidden layers, each with 32 perceptrons
+## 2 hidden layers, with 100 and 50 perceptrons
 ## this one use sigmoid in hiddn layer and softmax in output
 ## set batch size and epochs before start
 
@@ -22,8 +22,8 @@ class MLP(object):
         H is hidden dimension; 
         D_out is output dimension.
         '''
-        self.D_in, self.H1, self.H2, self.D_out = n_features, 32, 32, n_labels
-        self.epochs, self.batch_size = 50, 16
+        self.D_in, self.H1, self.H2, self.D_out = n_features, 100, 50, n_labels
+        self.epochs, self.batch_size = 200, 32
         self.learning_rate = 1e-2
 
         # Randomly initialize weights
@@ -89,8 +89,8 @@ def main():
     data = load_digits()
     test_ratio = 0.2
     test_split = np.random.uniform(0, 1, len(data.data))
-    train_x = data.data[test_split >= test_ratio]
-    test_x = data.data[test_split < test_ratio]
+    train_x = data.data[test_split >= test_ratio] / data.data.max()
+    test_x = data.data[test_split < test_ratio] / data.data.max()
     train_y = data.target[test_split >= test_ratio]
     test_y = data.target[test_split < test_ratio]
 

@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.datasets import load_digits
+from sklearn.datasets import fetch_openml
 '''
 This is a simple implementation of multilayer perceptron with backpropagation training
 Implemented features:
@@ -45,7 +45,7 @@ def squared_error(pred, y):
     return np.square(pred - y).mean() / 2
 
 class MLP(object):
-    def __init__(self, act_type, opt_type, layers, epochs=50, regression=False, learning_rate=0.1, lmbda=1e-2):
+    def __init__(self, act_type, opt_type, layers, epochs=10, regression=False, learning_rate=0.01, lmbda=1e-2):
         act_funcs = {'ReLU': relu, 'Sigmoid': sigmoid, 'Tanh': tanh}
         dacts = {'ReLU': drelu, 'Sigmoid': dsigmoid, 'Tanh': dtanh}
         optimizers = {'SGD': self.sgd, 'Momentum': self.momentum, 'Nesterov': self.nesterov, 
@@ -55,7 +55,7 @@ class MLP(object):
         self.lmbda = lmbda # regularization coefficient
         self.gamma = 0.9
         self.eps = 1e-8
-        self.epochs, self.batch_size = epochs, 16
+        self.epochs, self.batch_size = epochs, 32
         self.learning_rate = learning_rate
         self.layer_num = len(layers)-1
         self.n_labels = layers[-1]
@@ -190,15 +190,13 @@ class MLP(object):
 
 
 def main():
-    data = load_digits()
+    x, y = fetch_openml('mnist_784', return_X_y=True, data_home="data")
     test_ratio = 0.2
-    test_split = np.random.uniform(0, 1, len(data.data))
-    train_x = data.data[test_split >= test_ratio]
-    test_x = data.data[test_split < test_ratio]
-    train_y = data.target[test_split >= test_ratio]
-    test_y = data.target[test_split < test_ratio]
+    test_split = np.random.uniform(0, 1, x.shape[0])
+    train_x, test_x = x[test_split >= test_ratio] / x.max(), x[test_split < test_ratio] / x.max()
+    train_y, test_y = y.astype(np.int_)[test_split >= test_ratio], y.astype(np.int_)[test_split < test_ratio]
 
-    mlp = MLP('ReLU', 'Adam', layers=[train_x.shape[1], 32, 32, len(np.unique(data.target))])
+    mlp = MLP('ReLU', 'Adam', layers=[x.shape[1], 100, 100, len(np.unique(y))])
     mlp.fit(train_x, train_y)
     print(sum(np.argmax(mlp.predict(train_x), axis=1) == train_y)/train_y.shape[0])
     print(sum(np.argmax(mlp.predict(test_x), axis=1) == test_y)/test_y.shape[0])
