@@ -8,7 +8,7 @@ def sigmoid(x):
 
 
 class RBM(object):
-	def __init__(self, n_v, n_h, epochs=200, lr=0.2):
+	def __init__(self, n_v, n_h, epochs=50, lr=0.05):
 		self.w = np.random.randn(n_v, n_h)
 		self.a = np.random.randn(1, n_v)
 		self.b = np.random.randn(1, n_h)
@@ -20,7 +20,6 @@ class RBM(object):
 		self.lr = lr
 		self.batch_size = 16
 		self.max_epochs = epochs
-		self.gamma = 0.5
 		self.decay = 1 - 1e-4
 
 	def fit(self, v):
@@ -60,7 +59,7 @@ class RBM(object):
 				self.w *= self.decay
 				self.a *= self.decay
 				self.b *= self.decay
-			if j % 9 == 0:
+			if j % 10 == 9:
 				print('squared loss', np.square(self.marginal_v(self.marginal_h(v)) - v).sum())
 		# print(np.around(self.marginal_v(self.marginal_h(v)), 3))
 
@@ -72,23 +71,24 @@ class RBM(object):
 
 	
 def main():
-	data = load_digits() # fetch_openml('mnist_784', return_X_y=True, data_home="data")
-	x, y = data.data, data.target
+	# data = load_digits()
+	# x, y = data.data, data.target
+	x, y = fetch_openml('mnist_784', return_X_y=True, data_home="data")
 	test_ratio = 0.2
 	test_split = np.random.uniform(0, 1, x.shape[0])
 	train_x, test_x = x[test_split >= test_ratio] / x.max(), x[test_split < test_ratio] / x.max()
 	train_y, test_y = y.astype(np.int_)[test_split >= test_ratio], y.astype(np.int_)[test_split < test_ratio]
 
-	rbm = RBM(x.shape[1], 20)
+	rbm = RBM(x.shape[1], 64)
 	rbm.fit(train_x)
 	print(np.square(rbm.marginal_v(rbm.marginal_h(train_x)) - train_x).sum())
 	print(np.square(rbm.marginal_v(rbm.marginal_h(test_x)) - test_x).sum())
 
 	for i in range(10):
 		plt.subplot(2, 10, i+1)
-		plt.imshow(test_x[test_y == i].mean(axis=0).reshape(8, 8), cmap='gray', vmin=0, vmax=1)
+		plt.imshow(test_x[test_y == i].mean(axis=0).reshape(28, 28), cmap='gray', vmin=0, vmax=1)
 		plt.subplot(2, 10, i+11)
-		plt.imshow(rbm.marginal_v(rbm.marginal_h(test_x[test_y == i])).mean(axis=0).reshape(8, 8), cmap='gray', vmin=0, vmax=1)
+		plt.imshow(rbm.marginal_v(rbm.marginal_h(test_x[test_y == i])).mean(axis=0).reshape(28, 28), cmap='gray', vmin=0, vmax=1)
 	plt.show()
 
 

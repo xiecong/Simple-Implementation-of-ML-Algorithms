@@ -1,13 +1,11 @@
 import numpy as np
 from sklearn.datasets import fetch_openml
 from cnn_layer_advanced import *
-#This implements Lenet-4, test on MNIST dataset
-# To do: drop out, batch normalization
-
+# This implements Lenet-4, test on MNIST dataset
 
 class CNN(object):
 	def __init__(self, x_shape, label_num):
-		self.batch_size = 128
+		self.batch_size = 64
 		self.conv1 = Conv(in_shape=x_shape, k_num=6, k_size=5, act_type="ReLU")
 		self.pool1 = MaxPooling(in_shape=self.conv1.out_shape, k_size=2)
 		self.conv2 = Conv(in_shape=self.pool1.out_shape, k_num=16, k_size=3, act_type="ReLU")
@@ -20,7 +18,7 @@ class CNN(object):
 		n_data = train_x.shape[0]
 		train_y = np.zeros((n_data, 10))
 		train_y[np.arange(n_data), labels] = 1
-		for epoch in range(5):
+		for epoch in range(10):
 			#mini batch
 			permut=np.random.permutation(n_data//self.batch_size*self.batch_size).reshape([-1,self.batch_size])
 			for b_idx in range(permut.shape[0]):
@@ -33,7 +31,8 @@ class CNN(object):
 				out_fc1 = self.fc1.forward(out_p2)
 				out_fc2 = self.fc2.forward(out_fc1)
 				out_sf = self.softmax.forward(out_fc2)
-				print("epoch {} batch {} loss: {}".format(epoch, b_idx, self.softmax.loss(out_sf, y)))
+				if b_idx%10==0:
+					print("epoch {} batch {} loss: {}".format(epoch, b_idx, self.softmax.loss(out_sf, y)))
 
 				grad_sf = self.softmax.gradient(out_sf, y)
 				grad_fc2 = self.fc2.gradient(grad_sf, out_fc2)
@@ -47,11 +46,10 @@ class CNN(object):
 				self.conv2.backward("Adam")
 				self.fc2.backward("Adam")
 				self.fc1.backward("Adam")
-			self.test_accuracy(train_x, labels)
+			if epoch%2==0: self.test_accuracy(train_x, labels)
 
 	def test_accuracy(self, x, y):
-		res = self.predict(x)
-		print(sum(yi==np.argmax(y_hat) for y_hat, yi in zip(res, y))/y.shape[0])
+		print(sum(np.argmax(self.predict(x), axis=1) == y)/y.shape[0])
 
 	def predict(self, x):
 		out_c1 = self.conv1.forward(x)

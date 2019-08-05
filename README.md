@@ -44,10 +44,15 @@ Implemented algorithms:
 
 * Deep Learning Architecture
     * Multilayer Perceptron
+    * Restricted Boltzman Machine
     * Deep Belief Network
-        * Restricted Boltzman Machine
     * Convolutional Neural Network
-        * Fast layers and vectorized operations
+        * Convolutional layers with vectorized img2col and col2img
+        * Gradient check
+        * Activation layers
+        * Max pooling layers
+        * Softmax layers
+        * Feedforward layers
         * WIP: drop out, batch normalization
 
 * Deep Learning Techniques

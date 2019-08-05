@@ -9,11 +9,11 @@ def sigmoid(x):
 class LogisticRegression(object):
 	def __init__(self):
 		self.learning_rate = 0.01
-		self.gamma = 0.5
+		self.gamma = 0.9
 		self.decay = 1 - 1e-4
 
 	def loss(self, x, y): #using cross entropy as loss function
-		eps = 1e-8
+		eps = 1e-20
 		h = self.predict(x)
 		return -(np.multiply(y, np.log(h+eps)) + np.multiply((1 - y), np.log(1 - h+eps))).mean()
 
@@ -35,6 +35,7 @@ class LogisticRegression(object):
 			self.w = (self.w - self.mom_w) * self.decay
 			self.mom_b = self.gamma * self.mom_b + self.learning_rate * g_b
 			self.b = (self.b - self.mom_b) * self.decay
+			if i%100==0: print(self.loss(x, labels))
 
 	def predict(self, x):
 		return sigmoid(x.dot(self.w) + self.b)
@@ -44,10 +45,8 @@ def main():
 	data = load_digits()
 	test_ratio = 0.2
 	test_split = np.random.uniform(0, 1, len(data.data))
-	train_x = data.data[test_split >= test_ratio]
-	test_x = data.data[test_split < test_ratio]
-	train_y = data.target[test_split >= test_ratio]
-	test_y = data.target[test_split < test_ratio]
+	train_x, train_y = data.data[test_split >= test_ratio], data.target[test_split >= test_ratio]
+	test_x, test_y = data.data[test_split < test_ratio], data.target[test_split < test_ratio]
 
 	lr = LogisticRegression()
 	lr.fit(train_x, train_y)
