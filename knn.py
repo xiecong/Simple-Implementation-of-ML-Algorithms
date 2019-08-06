@@ -26,10 +26,8 @@ def main():
 	data = load_digits()
 	test_ratio = 0.2
 	test_split = np.random.uniform(0, 1, len(data.data))
-	train_x = data.data[test_split >= test_ratio]
-	test_x = data.data[test_split < test_ratio]
-	train_y = data.target[test_split >= test_ratio]
-	test_y = data.target[test_split < test_ratio]
+	train_x, test_x = data.data[test_split >= test_ratio], data.data[test_split < test_ratio]
+	train_y, test_y = data.target[test_split >= test_ratio], data.target[test_split < test_ratio]
 
 	knn = kNearestNeighbor(k=3)
 	knn.fit(train_x, train_y)

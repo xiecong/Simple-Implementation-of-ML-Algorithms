@@ -62,7 +62,7 @@ class Layer(object):
 		self.dact_funcs = {'ReLU': drelu, 'Sigmoid': dsigmoid, 'Tanh': dtanh, "Linear": dlinear}
 		self.gradient_funcs = {'Adam':self.adam, "SGD": self.sgd}
 		self.learning_rate = 1e-3
-		self.weight_decay = 1e-5
+		self.weight_decay = 1e-4
 		self.eps = 1e-20
 		self.has_param = has_param
 

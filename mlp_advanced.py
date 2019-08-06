@@ -45,7 +45,7 @@ def squared_error(pred, y):
     return np.square(pred - y).mean() / 2
 
 class MLP(object):
-    def __init__(self, act_type, opt_type, layers, epochs=10, regression=False, learning_rate=0.01, lmbda=1e-2):
+    def __init__(self, act_type, opt_type, layers, epochs=20, regression=False, learning_rate=0.01, lmbda=1e-2):
         act_funcs = {'ReLU': relu, 'Sigmoid': sigmoid, 'Tanh': tanh}
         dacts = {'ReLU': drelu, 'Sigmoid': dsigmoid, 'Tanh': dtanh}
         optimizers = {'SGD': self.sgd, 'Momentum': self.momentum, 'Nesterov': self.nesterov, 

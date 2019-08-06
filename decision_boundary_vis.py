@@ -22,11 +22,17 @@ def gen_xor(train_num):
 	return x, np.array([(xi[0]*xi[1] > 0) for xi in x]) * 1
 
 def gen_spiral(train_num):
-	r = np.arange(train_num) / train_num
+	r = 0.8 * np.arange(train_num) / train_num
 	y = np.arange(train_num)%2
 	t = 1.75 * r * 2 * np.pi + y * np.pi;
-	x = np.c_[r * np.sin(t),r * np.cos(t)]
+	x = np.c_[r * np.sin(t) + np.random.random(train_num)/10, r * np.cos(t) + np.random.random(train_num)/10]
 	return x, y * 1
+
+def gen_moon(train_num):
+	y = np.arange(train_num) % 2
+	x0 = (y - 0.5) * (.5 - np.cos(np.linspace(0, np.pi, train_num))) + np.random.random(train_num) / 10
+	x1 = (y - 0.5) * (.5 - 2 * np.sin(np.linspace(0, np.pi, train_num))) + np.random.random(train_num) / 10
+	return np.c_[x0, x1], y
 
 # visualize decision boundary change
 def boundary_vis_plots(model, x, y, subplot=[1, 1, 1]):
@@ -44,7 +50,7 @@ def boundary_vis_plots(model, x, y, subplot=[1, 1, 1]):
 
 
 def main():
-	data_loaders = [gen_linear, gen_circle, gen_xor, gen_spiral]
+	data_loaders = [gen_linear, gen_circle, gen_xor, gen_spiral, gen_moon]
 	models = [
 		(kNearestNeighbor, {'k': 5}),
 		(FactorizationMachines, {'learning_rate': 1, 'embedding_dim': 1}),
@@ -55,8 +61,8 @@ def main():
 		(MLP, {'act_type': 'Tanh', 'opt_type': 'Adam', 'layers': [2, 8, 7, 2], 'epochs': 200, 'learning_rate': 0.5, 'lmbda': 1e-4})
 	]
 	for i, data_loader in enumerate(data_loaders):
+		x, y = data_loader(256)
 		for j, model in enumerate(models):
-			x, y = data_loader(256)
 			clf = model[0](**model[1])
 			clf.fit(x, y if not j in [2, 3] else 2 * y - 1)
 			boundary_vis_plots(clf, x, y, subplot=[len(data_loaders), len(models), len(models) * i + 1 + j])

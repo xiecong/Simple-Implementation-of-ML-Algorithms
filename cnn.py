@@ -5,7 +5,7 @@ from cnn_layer_advanced import *
 
 class CNN(object):
 	def __init__(self, x_shape, label_num):
-		self.batch_size = 64
+		self.batch_size = 32
 		self.conv1 = Conv(in_shape=x_shape, k_num=6, k_size=5, act_type="ReLU")
 		self.pool1 = MaxPooling(in_shape=self.conv1.out_shape, k_size=2)
 		self.conv2 = Conv(in_shape=self.pool1.out_shape, k_num=16, k_size=3, act_type="ReLU")
@@ -18,7 +18,7 @@ class CNN(object):
 		n_data = train_x.shape[0]
 		train_y = np.zeros((n_data, 10))
 		train_y[np.arange(n_data), labels] = 1
-		for epoch in range(10):
+		for epoch in range(20):
 			#mini batch
 			permut=np.random.permutation(n_data//self.batch_size*self.batch_size).reshape([-1,self.batch_size])
 			for b_idx in range(permut.shape[0]):
@@ -31,7 +31,7 @@ class CNN(object):
 				out_fc1 = self.fc1.forward(out_p2)
 				out_fc2 = self.fc2.forward(out_fc1)
 				out_sf = self.softmax.forward(out_fc2)
-				if b_idx%10==0:
+				if b_idx%100==0:
 					print("epoch {} batch {} loss: {}".format(epoch, b_idx, self.softmax.loss(out_sf, y)))
 
 				grad_sf = self.softmax.gradient(out_sf, y)
@@ -46,10 +46,8 @@ class CNN(object):
 				self.conv2.backward("Adam")
 				self.fc2.backward("Adam")
 				self.fc1.backward("Adam")
-			if epoch%2==0: self.test_accuracy(train_x, labels)
-
-	def test_accuracy(self, x, y):
-		print(sum(np.argmax(self.predict(x), axis=1) == y)/y.shape[0])
+			if epoch%4==0:
+				print(sum(np.argmax(self.predict(train_x), axis=1) == labels)/labels.shape[0])
 
 	def predict(self, x):
 		out_c1 = self.conv1.forward(x)
@@ -84,14 +82,13 @@ def main():
 
 	test_ratio = 0.2
 	test_split = np.random.uniform(0, 1, x.shape[0])
-	train_x = x[test_split >= test_ratio]
-	test_x = x[test_split < test_ratio]
-	train_y = y.astype(np.int_)[test_split >= test_ratio]
-	test_y = y.astype(np.int_)[test_split < test_ratio]
+	train_x, train_y = x[test_split >= test_ratio] / x.max(), y.astype(np.int_)[test_split >= test_ratio]
+	test_x, test_y = x[test_split < test_ratio] / x.max(), y.astype(np.int_)[test_split < test_ratio]
 
 	cnn = CNN(x.shape[1:4], 10)
 	cnn.fit(train_x, train_y)
-	cnn.test_accuracy(test_x, test_y)
+	print(sum(np.argmax(cnn.predict(train_x), axis=1) == train_y)/train_y.shape[0])
+	print(sum(np.argmax(cnn.predict(test_x), axis=1) == test_y)/test_y.shape[0])
 
 
 if __name__ == "__main__":
