@@ -128,7 +128,7 @@ class Conv(Layer):
 		self.grad_w = self.input.T.dot(grad_out) / batch_size
 		self.grad_b = np.ones((1, grad_out.shape[0])).dot(grad_out) / batch_size
 		self.input = None
-		return np.array(col2img(grad_out.dot(self.w.T), self.in_shape, self.k_size, self.stride))
+		return col2img(grad_out.dot(self.w.T), self.in_shape, self.k_size, self.stride)
 
 
 class MaxPooling(Layer):
@@ -192,11 +192,10 @@ class FullyConnect(Layer):
 		return self.act_func(self.input.dot(self.w)+self.b)
 
 	def gradient(self, grad_act, act):
-		grad_act=grad_act.reshape([grad_act.shape[0], grad_act.shape[1]])
+		# grad_act=grad_act.reshape([grad_act.shape[0], grad_act.shape[1]])
 		batch_size = grad_act.shape[0]
 		grad_out = self.dact_func(grad_act, act)
 		self.grad_w = self.input.T.dot(grad_out) / batch_size
 		self.grad_b = np.ones((1, batch_size)).dot(grad_out) / batch_size
 		self.input = None
-		in_shape = self.in_shape.copy()
-		return grad_out.dot(self.w.T).reshape(np.insert(in_shape, 0, -1))
+		return grad_out.dot(self.w.T).reshape([-1] + list(self.in_shape))

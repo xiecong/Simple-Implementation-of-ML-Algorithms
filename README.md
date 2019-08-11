@@ -54,6 +54,8 @@ Implemented algorithms:
         * Softmax layers
         * Feedforward layers
         * WIP: drop out, batch normalization
+    * Recurrent neural network
+        * Backpropagation through time (BPTT) 
 
 * Deep Learning Techniques
     * Mini Batch
@@ -94,7 +96,6 @@ Implemented algorithms:
     * Prediction by Viterbi
 
 Work in progress:
-* Recurrent neural network
 * Long short-term memory
 * Generative Adversarial Networks
 * Deep Q-Network (Reinforcement learning)
