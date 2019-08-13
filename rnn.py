@@ -1,4 +1,7 @@
 import numpy as np
+import requests
+import re
+# TODO add gradient check
 
 
 def relu(x):
@@ -43,7 +46,7 @@ class RNN(object):
 		self.act_func, self.dact_func = tanh, dtanh
 		self.loss = cross_entropy
 		self.n_hidden, self.n_label = n_hidden, n_label
-		self.lr, self.batch_size, self.epochs = 0.1, 32, 100
+		self.lr, self.batch_size, self.epochs = 0.5, 32, 200
 		self.eps = 1e-20
 		self.n_t = n_t
 		self.u = np.random.randn(n_input, self.n_hidden) / n_input
@@ -94,8 +97,12 @@ class RNN(object):
 				grad_v = h.T.dot(grad_pred)
 				grad_c = constant.dot(grad_pred)
 
+				for grads in [grad_u, grad_w, grad_b, grad_v, grad_c]:
+					np.clip(grads, -10, 10, out=grads)
+
 				self.adam(grad_u=grad_u, grad_w=grad_w, grad_b=grad_b, grad_v=grad_v, grad_c=grad_c)
 				self.regularization()
+			print(self.sample(np.random.randint(n_input), np.random.randn(1, self.n_hidden), n_t * 4))
 			print(self.loss(self.predict(x).reshape(n_t * n_data, self.n_label), y.reshape(n_t * n_data, self.n_label)))
 
 	def sgd(self, grad_u, grad_w, grad_b, grad_v, grad_c):
@@ -111,7 +118,6 @@ class RNN(object):
 	def adam(self, grad_u, grad_w, grad_b, grad_v, grad_c):
 		beta1 = 0.9
 		beta2 = 0.999
-		eps = 1e-20
 		alpha = self.lr / self.batch_size / self.n_t
 		for params, grads, mom, cache in zip(
 			[self.u, self.w, self.b, self.v, self.c],
@@ -121,7 +127,7 @@ class RNN(object):
 		):
 			mom = beta1 * mom + (1 - beta1) * grads
 			cache = beta2 * cache + (1 - beta2) * np.square(grads)
-			params -= alpha * mom / (np.sqrt(cache) + eps)
+			params -= alpha * mom / (np.sqrt(cache) + self.eps)
 
 	def regularization(self):
 		lbd = 1e-4
@@ -136,6 +142,18 @@ class RNN(object):
 			t_idx_1 = t_idx - n_data if t > 0 else t_idx
 			h[t_idx] = self.act_func(x[t].dot(self.u) + h[t_idx_1].dot(self.w) + self.b)
 		return softmax(h.dot(self.v) + self.c).reshape(n_t, n_data, self.n_label)
+
+	def sample(self, x_idx, h, seq_length):
+		n_input = self.u.shape[0]
+		seq = [x_idx]
+		for t in range(seq_length):
+			x = np.zeros((1, n_input))
+			x[0, seq[-1]] = 1
+			h = self.act_func(x.dot(self.u) + h.dot(self.w) + self.b)
+			y = softmax(h.dot(self.v) + self.c)
+			seq.append(np.random.choice(range(n_input), p=y.flatten()))
+		return ''.join(np.vectorize(self.ix_to_word.get)(np.array(seq)).tolist())
+
 
 def binary_add_test():
 	binary_dim = 8
@@ -154,9 +172,40 @@ def binary_add_test():
 	print((np.argmax(rnn.predict(train_x), axis=2)==train_y).sum()/(train_y.shape[0] * train_y.shape[1]))
 	print((np.argmax(rnn.predict(test_x), axis=2)==test_y).sum()/(test_y.shape[0] * test_y.shape[1]))
 
+def text_generation(use_word=True):
+	text = requests.get('http://www.gutenberg.org/cache/epub/11/pg11.txt').text
+	if use_word:
+		text = [word+' ' for word in re.sub("[^a-zA-Z]", " ", text).lower().split()]
+
+	words = sorted(list(set(text)))
+	text_size, vocab_size = len(text), len(words)
+
+	print(f'text has {text_size} characters, {vocab_size} unique.')
+	word_to_ix = {word:i for i, word in enumerate(words)}
+	ix_to_word = {i:word for i, word in enumerate(words)}
+
+	seq_length = 25
+	indices = np.vectorize(word_to_ix.get)(np.array(list(text)))
+	data = np.zeros((text_size, vocab_size))
+	data[np.arange(text_size), indices] = 1
+	n_text = (text_size - 1) // seq_length
+	x = data[:n_text * seq_length].reshape(n_text, seq_length, vocab_size).transpose(1,0,2)
+	y = indices[1: n_text * seq_length + 1].reshape(n_text, seq_length).T
+
+	test_ratio = 0.2
+	test_split = np.random.uniform(0, 1, x.shape[1])
+	train_x, test_x = x[:,test_split >= test_ratio,:] , x[:,test_split < test_ratio,:]
+	train_y, test_y = y[:,test_split >= test_ratio], y[:,test_split < test_ratio]
+
+	rnn = RNN(vocab_size, 500, vocab_size, seq_length)
+	rnn.ix_to_word = ix_to_word
+	rnn.fit(train_x, train_y)
+	print((np.argmax(rnn.predict(train_x), axis=2)==train_y).sum()/(train_y.shape[0] * train_y.shape[1]))
+	print((np.argmax(rnn.predict(test_x), axis=2)==test_y).sum()/(test_y.shape[0] * test_y.shape[1]))
 
 def main():
-	binary_add_test()
+	text_generation(use_word=True)
+	#binary_add_test()
 
 if __name__ == "__main__":
 	main()

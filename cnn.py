@@ -18,7 +18,7 @@ class CNN(object):
 		n_data = train_x.shape[0]
 		train_y = np.zeros((n_data, 10))
 		train_y[np.arange(n_data), labels] = 1
-		for epoch in range(20):
+		for epoch in range(10):
 			#mini batch
 			permut=np.random.permutation(n_data//self.batch_size*self.batch_size).reshape([-1,self.batch_size])
 			for b_idx in range(permut.shape[0]):

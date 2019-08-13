@@ -2,7 +2,7 @@ import numpy as np
 # will add batch normalization
 # will add dropout
 # will add padding to convolutional layer
-
+# add gradient check for fc
 
 def relu(x):
 	return np.maximum(x, 0)

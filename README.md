@@ -55,7 +55,7 @@ Implemented algorithms:
         * Feedforward layers
         * WIP: drop out, batch normalization
     * Recurrent neural network
-        * Backpropagation through time (BPTT) 
+        * Backpropagation through time (BPTT)
 
 * Deep Learning Techniques
     * Mini Batch
@@ -97,6 +97,7 @@ Implemented algorithms:
 
 Work in progress:
 * Long short-term memory
+* Variational autoencoder (VAE)
 * Generative Adversarial Networks
 * Deep Q-Network (Reinforcement learning)
 
