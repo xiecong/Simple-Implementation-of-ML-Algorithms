@@ -48,10 +48,7 @@ Implemented algorithms:
     * Deep Belief Network
     * Convolutional Neural Network
         * Convolutional layers with vectorized img2col and col2img
-        * Gradient check
-        * Activation layers
         * Max pooling layers
-        * Softmax layers
         * Feedforward layers
         * WIP: drop out, batch normalization
     * Recurrent neural network
@@ -63,12 +60,14 @@ Implemented algorithms:
         * ReLU
         * Tanh
         * Sigmoid
+    * Softmax for classification
     * Loss functions
         * Squared error
         * Cross entropy
     * Regularization
         * L1
         * L2
+    * Gradient check
 
 * Optimization Algorithms (See implementations in MLP or Regression)
 	* Stochastic Gradient Descent

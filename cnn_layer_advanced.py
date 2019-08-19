@@ -2,7 +2,6 @@ import numpy as np
 # will add batch normalization
 # will add dropout
 # will add padding to convolutional layer
-# add gradient check for fc
 
 def relu(x):
 	return np.maximum(x, 0)
@@ -49,11 +48,16 @@ def img2col(img, k_size, stride=1):
 
 def col2img(col, in_shape, k_size, stride):
 	in_c, in_h, in_w = in_shape
-	out_h, out_w = (in_h - k_size) // stride + 1, (in_h - k_size) // stride + 1
+	out_h, out_w = (in_h - k_size) // stride + 1, (in_w - k_size) // stride + 1
 	batch_size = col.shape[0]//out_h//out_w
 	c_idices, h_indices, w_indices = img2col_index(in_shape, k_size, stride)
 	img = np.zeros((batch_size, in_c, in_h, in_w))
-	img[:, c_idices, h_indices, w_indices] += col.reshape(-1, batch_size, in_c * k_size * k_size).transpose(1,0,2)
+	np.add.at(
+		img,
+		(slice(None), c_idices, h_indices, w_indices),
+		col.reshape(-1, batch_size, in_c * k_size * k_size).transpose(1,0,2)
+	)
+	#img[:, c_idices, h_indices, w_indices] += col.reshape(-1, batch_size, in_c * k_size * k_size).transpose(1,0,2)
 	return img
 
 class Layer(object):

@@ -3,6 +3,7 @@ from sklearn.datasets import fetch_openml
 from cnn_layer_advanced import *
 # This implements Lenet-4, test on MNIST dataset
 
+
 class CNN(object):
 	def __init__(self, x_shape, label_num):
 		self.batch_size = 32
@@ -58,23 +59,28 @@ class CNN(object):
 		out_fc2 = self.fc2.forward(out_fc1)
 		return self.softmax.forward(out_fc2)
 
-	def gradient_check(self):
-		conva = Conv(in_shape=[16,32,28], k_num=12, k_size=3, act_type="Tanh")
-		convb = Conv(in_shape=[16,32,28], k_num=12, k_size=3, act_type="Tanh")
-		convb.w = conva.w.copy()
-		convb.b = conva.b.copy()
-		eps = 1e-4
-		x = np.random.randn(10,16,32,28)*10
+def gradient_check(conv=True):
+	if conv:
+		layera = Conv(in_shape=[16,32,28], k_num=12, k_size=3, act_type="Tanh")
+		layerb = Conv(in_shape=[16,32,28], k_num=12, k_size=3, act_type="Tanh")
+	else:
+		layera = FullyConnect(in_shape=[16,32,28], out_dim=12, act_type="Tanh")
+		layerb = FullyConnect(in_shape=[16,32,28], out_dim=12, act_type="Tanh")
+	layerb.w = layera.w.copy()
+	layerb.b = layera.b.copy()
+	eps = 1e-4
+	x = np.random.randn(10,16,32,28)*10
+	for i in range(100):
+		idxes = tuple((np.random.uniform(0,1,4) * x.shape).astype(int))
 		x_a = x.copy()
 		x_b = x.copy()
-		idxes = [2,10,14,15]
-		x_a[idxes[0],idxes[1],idxes[2],idxes[3]]+=eps
-		x_b[idxes[0],idxes[1],idxes[2],idxes[3]]-=eps
-		out = conva.forward(x)
-		gradient = conva.gradient(np.ones(out.shape), out)
+		x_a[idxes] += eps
+		x_b[idxes] -= eps
+		out = layera.forward(x)
+		delta_out = (layera.forward(x_a) - layerb.forward(x_b)).sum()
+		gradient = layera.gradient(np.ones(out.shape), out)
 		# the output should be in the order of eps*eps 
-		print((conva.forward(x_a) - convb.forward(x_b)).sum()/eps/2-gradient[idxes[0],idxes[1],idxes[2],idxes[3]])
-
+		print(idxes, (delta_out / eps / 2 - gradient[idxes]) / eps / eps)
 
 def main():
 	x, y = fetch_openml('mnist_784', return_X_y=True, data_home="data")
@@ -92,4 +98,5 @@ def main():
 
 
 if __name__ == "__main__":
+	#gradient_check()
 	main()
