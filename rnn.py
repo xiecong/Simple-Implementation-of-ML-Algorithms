@@ -4,21 +4,11 @@ import re
 # TODO add sentence tokenizer
 
 
-def relu(x):
-	return np.maximum(x, 0)
-
 def sigmoid(x):
 	return 1 / (1 + np.exp(-x))
 
 def tanh(x):
 	return np.tanh(x)
-
-def linear(x):
-	return x
-
-def drelu(grad_a, act):
-	grad_a[act <= 0] = 0
-	return grad_a
 
 def dsigmoid(grad_a, act):
 	return np.multiply(grad_a, act - np.square(act))
@@ -26,19 +16,13 @@ def dsigmoid(grad_a, act):
 def dtanh(grad_a, act):
 	return np.multiply(grad_a, 1 - np.square(act))
 
-def dlinear(grad_a, act):
-	return grad_a
-
 def softmax(x):
-    eps = 1e-20
-    out = np.exp(x - np.max(x, axis=1).reshape(-1, 1))
-    return out / (np.sum(out, axis=1).reshape(-1, 1) + eps)
+	eps = 1e-20
+	out = np.exp(x - np.max(x, axis=1).reshape(-1, 1))
+	return out / (np.sum(out, axis=1).reshape(-1, 1) + eps)
 
 def cross_entropy(pred, y):
-    return -(np.multiply(y, np.log(pred + 1e-20))).sum()
-
-def squared_error(pred, y):
-    return np.square(pred - y).mean() / 2
+	return -(np.multiply(y, np.log(pred + 1e-20))).sum()
 
 
 class RNN(object):
@@ -148,11 +132,6 @@ class RNN(object):
 			pred_1 = cross_entropy(softmax(h_1.dot(params[2]) + params[8]), y)
 			pred_2 = cross_entropy(softmax(h_2.dot(params[3]) + params[9]), y)
 			print('gradient_check', ((pred_1 - pred_2) / eps / 2 - grad)/eps/eps)
-
-	def sgd(self, grad_u, grad_w, grad_b, grad_v, grad_c):
-		alpha = self.lr / self.batch_size / self.n_t
-		for params, grads in zip([self.u, self.w, self.b, self.v, self.c], [grad_u, grad_w, grad_b, grad_v, grad_c]): 
-			params -= alpha * grads
 
 	def sgd(self, grad_u, grad_w, grad_b, grad_v, grad_c):
 		alpha = self.lr / self.batch_size / self.n_t
