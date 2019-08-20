@@ -2,17 +2,20 @@ import numpy as np
 from sklearn.datasets import fetch_openml
 from cnn_layer_advanced import *
 # This implements Lenet-4, test on MNIST dataset
-
+# gradient check for all layers
 
 class CNN(object):
 	def __init__(self, x_shape, label_num):
 		self.batch_size = 32
-		self.conv1 = Conv(in_shape=x_shape, k_num=6, k_size=5, act_type="ReLU")
+		self.conv1 = Conv(in_shape=x_shape, k_num=6, k_size=5)
+		self.relu1 = Activation(in_shape=self.conv1.out_shape, act_type="ReLU")
 		self.pool1 = MaxPooling(in_shape=self.conv1.out_shape, k_size=2)
-		self.conv2 = Conv(in_shape=self.pool1.out_shape, k_num=16, k_size=3, act_type="ReLU")
+		self.conv2 = Conv(in_shape=self.pool1.out_shape, k_num=16, k_size=3)
+		self.relu2 = Activation(in_shape=self.conv2.out_shape, act_type="ReLU")
 		self.pool2 = MaxPooling(in_shape=self.conv2.out_shape, k_size=2)
-		self.fc1 = FullyConnect(self.pool2.out_shape, 120, act_type="ReLU")
-		self.fc2 = FullyConnect([120], label_num, act_type="Linear")
+		self.fc1 = FullyConnect(self.pool2.out_shape, 120)
+		self.relu3 = Activation(in_shape=[120], act_type="ReLU")
+		self.fc2 = FullyConnect([120], label_num)
 		self.softmax = Softmax(label_num)
 
 	def fit(self, train_x, labels):
@@ -26,22 +29,28 @@ class CNN(object):
 				x0 = train_x[permut[b_idx,:]]
 				y = train_y[permut[b_idx,:]]
 				out_c1 = self.conv1.forward(x0)
-				out_p1 = self.pool1.forward(out_c1)
+				out_r1 = self.relu1.forward(out_c1)
+				out_p1 = self.pool1.forward(out_r1)
 				out_c2 = self.conv2.forward(out_p1)
-				out_p2 = self.pool2.forward(out_c2)
+				out_r2 = self.relu2.forward(out_c2)
+				out_p2 = self.pool2.forward(out_r2)
 				out_fc1 = self.fc1.forward(out_p2)
-				out_fc2 = self.fc2.forward(out_fc1)
+				out_r3 = self.relu3.forward(out_fc1)
+				out_fc2 = self.fc2.forward(out_r3)
 				out_sf = self.softmax.forward(out_fc2)
 				if b_idx%100==0:
 					print("epoch {} batch {} loss: {}".format(epoch, b_idx, self.softmax.loss(out_sf, y)))
 
 				grad_sf = self.softmax.gradient(out_sf, y)
-				grad_fc2 = self.fc2.gradient(grad_sf, out_fc2)
-				grad_fc1 = self.fc1.gradient(grad_fc2, out_fc1)
+				grad_fc2 = self.fc2.gradient(grad_sf)
+				grad_r3 = self.relu3.gradient(grad_fc2, out_r3)
+				grad_fc1 = self.fc1.gradient(grad_r3)
 				grad_p2 = self.pool2.gradient(grad_fc1)
-				grad_c2 = self.conv2.gradient(grad_p2, out_c2)
+				grad_r2 = self.relu2.gradient(grad_p2, out_r2)
+				grad_c2 = self.conv2.gradient(grad_r2)
 				grad_p1 = self.pool1.gradient(grad_c2)
-				grad_c1 = self.conv1.gradient(grad_p1, out_c1)
+				grad_r1 = self.relu1.gradient(grad_p1, out_r1)
+				grad_c1 = self.conv1.gradient(grad_r1)
 
 				self.conv1.backward("Adam")
 				self.conv2.backward("Adam")
@@ -52,33 +61,38 @@ class CNN(object):
 
 	def predict(self, x):
 		out_c1 = self.conv1.forward(x)
-		out_p1 = self.pool1.forward(out_c1)
+		out_r1 = self.relu1.forward(out_c1)
+		out_p1 = self.pool1.forward(out_r1)
 		out_c2 = self.conv2.forward(out_p1)
-		out_p2 = self.pool2.forward(out_c2)
+		out_r2 = self.relu2.forward(out_c2)
+		out_p2 = self.pool2.forward(out_r2)
 		out_fc1 = self.fc1.forward(out_p2)
-		out_fc2 = self.fc2.forward(out_fc1)
+		out_r3 = self.relu3.forward(out_fc1)
+		out_fc2 = self.fc2.forward(out_r3)
 		return self.softmax.forward(out_fc2)
 
 def gradient_check(conv=True):
 	if conv:
-		layera = Conv(in_shape=[16,32,28], k_num=12, k_size=3, act_type="Tanh")
-		layerb = Conv(in_shape=[16,32,28], k_num=12, k_size=3, act_type="Tanh")
+		layera = Conv(in_shape=[16,32,28], k_num=12, k_size=3)
+		layerb = Conv(in_shape=[16,32,28], k_num=12, k_size=3)
+		act_layer = Activation(in_shape=layera.out_shape, act_type='Tanh')
 	else:
-		layera = FullyConnect(in_shape=[16,32,28], out_dim=12, act_type="Tanh")
-		layerb = FullyConnect(in_shape=[16,32,28], out_dim=12, act_type="Tanh")
+		layera = FullyConnect(in_shape=[16,32,28], out_dim=12)
+		layerb = FullyConnect(in_shape=[16,32,28], out_dim=12)
+		act_layer = Activation(in_shape=[12], act_type='Tanh')
 	layerb.w = layera.w.copy()
 	layerb.b = layera.b.copy()
 	eps = 1e-4
-	x = np.random.randn(10,16,32,28)*10
+	x = np.random.randn(10,16,32,28) * 10
 	for i in range(100):
 		idxes = tuple((np.random.uniform(0,1,4) * x.shape).astype(int))
 		x_a = x.copy()
 		x_b = x.copy()
 		x_a[idxes] += eps
 		x_b[idxes] -= eps
-		out = layera.forward(x)
-		delta_out = (layera.forward(x_a) - layerb.forward(x_b)).sum()
-		gradient = layera.gradient(np.ones(out.shape), out)
+		out = act_layer.forward(layera.forward(x))
+		delta_out = (act_layer.forward(layera.forward(x_a)) - act_layer.forward(layerb.forward(x_b))).sum()
+		gradient = layera.gradient(act_layer.gradient(np.ones(out.shape), out))
 		# the output should be in the order of eps*eps 
 		print(idxes, (delta_out / eps / 2 - gradient[idxes]) / eps / eps)
 
