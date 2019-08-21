@@ -200,3 +200,43 @@ class Activation(Layer):
 
 	def dtanh(self, grad, act):
 		return np.multiply(grad, 1 - np.square(act))
+
+
+class BatchNormalization(Layer):
+	def __init__(self, in_shape):
+		super(BatchNormalization, self).__init__(has_param=True)
+		self.in_shape = in_shape
+		self.param_shape = (1, in_shape[0]) if len(in_shape) == 1 else (1, in_shape[0], 1, 1)
+		self.agg_axis = 0 if len(in_shape) == 1 else (0, 2, 3)  # cnn over channel
+		self.momentum = 0.9
+		self.w, self.b = np.ones(self.param_shape), np.zeros(self.param_shape)
+		self.mean, self.var = np.zeros(self.param_shape), np.ones(self.param_shape)
+		self.grad_w, self.grad_b = np.ones(self.param_shape), np.zeros(self.param_shape)
+		self.batch_mean, self.batch_var = np.zeros(self.param_shape), np.ones(self.param_shape)
+
+		self.mom_w = np.zeros_like(self.w)
+		self.cache_w = np.zeros_like(self.w)
+		self.mom_b = np.zeros_like(self.b)
+		self.cache_b = np.zeros_like(self.b)
+
+	def forward(self, x):
+		self.batch_mean = x.mean(axis=self.agg_axis).reshape(self.param_shape)
+		self.batch_var = x.var(axis=self.agg_axis).reshape(self.param_shape)
+		self.x_hat = (x - self.mean) / np.sqrt(self.var + self.eps)
+		return self.w * self.x_hat + self.b
+
+	def gradient(self, grad):
+		batch_size = grad.shape[0]
+		self.grad_w = (grad * self.x_hat).sum(axis=self.agg_axis).reshape(self.param_shape) / batch_size
+		self.grad_b = grad.sum(axis=self.agg_axis).reshape(self.param_shape) / batch_size
+		grad_x_hat = grad * self.w
+		return (
+			grad_x_hat
+			# - grad_x_hat.mean(axis=self.agg_axis).reshape(self.param_shape)
+			# - self.x_hat * (grad_x_hat * self.x_hat).mean(axis=self.agg_axis).reshape(self.param_shape)
+		) / np.sqrt(self.var + self.eps)
+
+	def backward(self, grad_type):
+		self.gradient_funcs[grad_type]()
+		self.mean = self.batch_mean * (1.0 - self.momentum) + self.mean * self.momentum
+		self.var = self.batch_var * (1.0 - self.momentum) + self.var * self.momentum

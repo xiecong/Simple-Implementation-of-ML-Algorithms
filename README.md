@@ -50,7 +50,8 @@ Implemented algorithms:
         * Convolutional layers with vectorized img2col and col2img
         * Max pooling layers
         * Feedforward layers
-        * WIP: drop out, batch normalization
+        * batch normalization
+        * WIP: drop out
     * Recurrent neural network
         * Backpropagation through time (BPTT)
 
