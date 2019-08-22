@@ -1,36 +1,8 @@
 import numpy as np
 
 
-def relu(x):
-	return np.maximum(x, 0)
-
-def sigmoid(x):
-	return 1 / (1 + np.exp(-x))
-
-def tanh(x):
-	return np.tanh(x)
-
-def linear(x):
-	return x
-
-def drelu(grad_a, act):
-	grad_a[act <= 0] = 0
-	return grad_a
-
-def dsigmoid(grad_a, act):
-	return np.multiply(grad_a, act - np.square(act))
-
-def dtanh(grad_a, act):
-	return np.multiply(grad_a, 1 - np.square(act))
-
-def dlinear(grad_a, act):
-	return grad_a
-
-
 class Layer(object):
 	def __init__(self, has_param):
-		self.act_funcs = {'ReLU': relu, 'Sigmoid': sigmoid, 'Tanh': tanh, "Linear": linear}
-		self.dact_funcs = {'ReLU': drelu, 'Sigmoid': dsigmoid, 'Tanh': dtanh, "Linear": dlinear}
 		self.gradient_funcs = {'Adam':self.adam, "SGD": self.sgd}
 		self.learning_rate = 1e-2
 		self.weight_decay = 1e-4
@@ -39,13 +11,13 @@ class Layer(object):
 	def forward(self, x):
 		pass
 
-	def gradient(self, grad_act, act):
+	def gradient(self, grad):
 		pass
 
-	def backward(self, grad_type):
+	def backward(self, opt_type):
 		if self.has_param:
 			self.regularize()
-			self.gradient_funcs[grad_type]()
+			self.gradient_funcs[opt_type]()
 
 	def regularize(self):
 		self.w *= (1 - self.weight_decay)
@@ -69,10 +41,8 @@ class Layer(object):
 
 
 class Conv(Layer):
-	def __init__(self, in_shape, k_size, k_num, act_type, stride=1):
+	def __init__(self, in_shape, k_size, k_num, stride=1):
 		super(Conv, self).__init__(has_param=True)
-		self.act_func = self.act_funcs[act_type]
-		self.dact_func = self.dact_funcs[act_type]
 		self.in_shape = in_shape
 		channel, height, width = in_shape
 		self.k_size = k_size
@@ -97,13 +67,13 @@ class Conv(Layer):
 		return np.array(col_matrix)
 
 	def forward(self, x):
-		act = []
+		out = []
 		self.input = []
 		for i in range(x.shape[0]):
 			self.input.append(self.img2col(x[i]))
 			out = self.input[i].dot(self.w)+self.b
-			act.append(out.T.reshape(self.out_shape))
-		return self.act_func(np.array(act))
+			out.append(out.T.reshape(self.out_shape))
+		return np.array(out)
 
 	def col2img(self, grad_colin):
 		k_size = self.k_size
@@ -114,10 +84,10 @@ class Conv(Layer):
 			img[:, i:i+k_size, j:j+k_size] += grad_colin[row].reshape([self.in_shape[0], k_size, k_size])
 		return img
 
-	def gradient(self, grad_act, act):
-		batch_size = grad_act.shape[0]
+	def gradient(self, grad):
+		batch_size = grad.shape[0]
 		b_vec = np.ones((1, self.out_shape[1] * self.out_shape[2]))
-		grad_out = self.dact_func(grad_act, act).reshape([batch_size, self.out_shape[0], -1])
+		grad_out = grad.reshape([batch_size, self.out_shape[0], -1])
 		self.grad_w = np.zeros(self.w.shape)
 		self.grad_b = np.zeros(self.b.shape)
 		grad_in = []
@@ -160,53 +130,3 @@ class MaxPooling(Layer):
 		grad_out = np.repeat(grad_out, self.k_size, axis=2)
 		grad_out = np.repeat(grad_out, self.k_size, axis=3)
 		return np.multiply(self.mask, grad_out)
-
-
-class Softmax(Layer):
-	def __init__(self, w_size):
-		super(Softmax, self).__init__(has_param=False)
-
-	def forward(self, x):
-		return self.predict(x)
-
-	def loss(self, out, y):
-		eps = 1e-8
-		return -(np.multiply(y, np.log(out+eps))).mean()
-
-	def predict(self, x):
-		eps = 1e-8
-		out = np.exp(x - np.max(x, axis=1).reshape([-1, 1]))
-		return out / (np.sum(out, axis=1).reshape([-1, 1]) + eps)
-
-	def gradient(self, out, y):
-		return out - y
-
-
-class FullyConnect(Layer):
-	def __init__(self, in_shape, out_dim, act_type):
-		super(FullyConnect, self).__init__(has_param=True)
-		self.act_func = self.act_funcs[act_type]
-		self.dact_func = self.dact_funcs[act_type]
-		self.in_shape = np.array(in_shape)
-		self.w = np.random.randn(self.in_shape.prod(), out_dim)
-		self.b = np.random.randn(1, out_dim)
-		self.mom_w = np.zeros_like(self.w)
-		self.cache_w = np.zeros_like(self.w)
-		self.mom_b = np.zeros_like(self.b)
-		self.cache_b = np.zeros_like(self.b)
-
-	def forward(self, x):
-		self.input = x.reshape([x.shape[0],-1])
-		return self.act_func(self.input.dot(self.w)+self.b)
-
-	def gradient(self, grad_act, act):
-		grad_act=grad_act.reshape([grad_act.shape[0], grad_act.shape[1]])
-		batch_size = grad_act.shape[0]
-		grad_out = self.dact_func(grad_act, act)
-		self.grad_w = self.input.T.dot(grad_out)
-		self.grad_b = np.ones((1, batch_size)).dot(grad_out)
-		self.grad_w /= batch_size
-		self.grad_b /= batch_size
-		self.input = None
-		in_shape = self.in_shape.copy()
-		return grad_out.dot(self.w.T).reshape(np.insert(in_shape, 0, -1))

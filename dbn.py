@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.datasets import load_digits, fetch_openml
-from mlp_advanced import MLP
+from mlp import MLP
 from rbm import RBM
 
 

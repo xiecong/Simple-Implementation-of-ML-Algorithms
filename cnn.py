@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.datasets import fetch_openml
-from cnn_layer_advanced import Conv, MaxPooling, FullyConnect, Activation, Softmax, BatchNormalization
+from nn_layers import Conv, MaxPooling, FullyConnect, Activation, Softmax, BatchNormalization
 # This implements Lenet-4, test on MNIST dataset
 # gradient check for all layers for input x, w, b
 

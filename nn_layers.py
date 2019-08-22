@@ -49,10 +49,10 @@ class Layer(object):
 	def gradient(self, grad):
 		pass
 
-	def backward(self, grad_type):
+	def backward(self, opt_type):
 		if self.has_param:
 			self.regularize()
-			self.gradient_funcs[grad_type]()
+			self.gradient_funcs[opt_type]()
 
 	def regularize(self):
 		self.w *= (1 - self.weight_decay)
