@@ -35,13 +35,17 @@ def col2img(col, in_shape, k_size, stride):
 	#img[:, c_idices, h_indices, w_indices] += col.reshape(-1, batch_size, in_c * k_size * k_size).transpose(1,0,2)
 	return img
 
+
 class Layer(object):
-	def __init__(self, has_param):
+	def __init__(self):
 		self.gradient_funcs = {'Adam':self.adam, "SGD": self.sgd}
 		self.learning_rate = 1e-3
 		self.weight_decay = 1e-4
 		self.eps = 1e-20
-		self.has_param = has_param
+
+	def init_momentum_cache(self):
+		self.mom_w, self.cache_w = np.zeros_like(self.w), np.zeros_like(self.w)
+		self.mom_b, self.cache_b = np.zeros_like(self.b), np.zeros_like(self.b)
 
 	def forward(self, x):
 		pass
@@ -50,9 +54,8 @@ class Layer(object):
 		pass
 
 	def backward(self, opt_type):
-		if self.has_param:
-			self.regularize()
-			self.gradient_funcs[opt_type]()
+		self.regularize()
+		self.gradient_funcs[opt_type]()
 
 	def regularize(self):
 		self.w *= (1 - self.weight_decay)
@@ -76,17 +79,13 @@ class Layer(object):
 
 class Conv(Layer):
 	def __init__(self, in_shape, k_size, k_num, stride=1):
-		super(Conv, self).__init__(has_param=True)
+		super(Conv, self).__init__()
 		self.in_shape = in_shape
 		channel, height, width = in_shape
 		self.k_size = k_size
 		self.w = np.random.randn(channel*k_size*k_size, k_num)
 		self.b = np.random.randn(1,k_num)
-
-		self.mom_w = np.zeros_like(self.w)
-		self.cache_w = np.zeros_like(self.w)
-		self.mom_b = np.zeros_like(self.b)
-		self.cache_b = np.zeros_like(self.b)
+		self.init_momentum_cache()
 
 		self.out_shape = (k_num, (height-k_size)//stride+1, (width-k_size)//stride+1)
 		self.stride = stride
@@ -108,7 +107,7 @@ class Conv(Layer):
 
 class MaxPooling(Layer):
 	def __init__(self, in_shape, k_size, stride=None):
-		super(MaxPooling, self).__init__(has_param=False)
+		super(MaxPooling, self).__init__()
 		self.in_shape = in_shape
 		channel, height, width = in_shape
 		self.k_size = k_size
@@ -132,8 +131,8 @@ class MaxPooling(Layer):
 
 
 class Softmax(Layer):
-	def __init__(self, w_size):
-		super(Softmax, self).__init__(has_param=False)
+	def __init__(self):
+		super(Softmax, self).__init__()
 
 	def forward(self, x):
 		return self.predict(x)
@@ -151,14 +150,11 @@ class Softmax(Layer):
 
 class FullyConnect(Layer):
 	def __init__(self, in_shape, out_dim):
-		super(FullyConnect, self).__init__(has_param=True)
+		super(FullyConnect, self).__init__()
 		self.in_shape = in_shape
 		self.w = np.random.randn(np.prod(self.in_shape), out_dim)
 		self.b = np.random.randn(1, out_dim)
-		self.mom_w = np.zeros_like(self.w)
-		self.cache_w = np.zeros_like(self.w)
-		self.mom_b = np.zeros_like(self.b)
-		self.cache_b = np.zeros_like(self.b)
+		self.init_momentum_cache()
 
 	def forward(self, x):
 		self.input = x.reshape([x.shape[0],-1])
@@ -175,8 +171,8 @@ class FullyConnect(Layer):
 
 
 class Activation(Layer):
-	def __init__(self, in_shape, act_type):
-		super(Activation, self).__init__(has_param=True)
+	def __init__(self, act_type):
+		super(Activation, self).__init__()
 		self.act_funcs = {'ReLU': self.relu, 'Sigmoid': self.sigmoid, 'Tanh': self.tanh}
 		self.dact_funcs = {'ReLU': self.drelu, 'Sigmoid': self.dsigmoid, 'Tanh': self.dtanh}
 		self.forward = self.act_funcs[act_type]
@@ -204,26 +200,23 @@ class Activation(Layer):
 
 class BatchNormalization(Layer):
 	def __init__(self, in_shape):
-		super(BatchNormalization, self).__init__(has_param=True)
+		super(BatchNormalization, self).__init__()
 		self.in_shape = in_shape
 		self.param_shape = (1, in_shape[0]) if len(in_shape) == 1 else (1, in_shape[0], 1, 1)
 		self.agg_axis = 0 if len(in_shape) == 1 else (0, 2, 3)  # cnn over channel
-		self.momentum = 0.9
+		self.momentum = 0.99
 		self.w, self.b = np.ones(self.param_shape), np.zeros(self.param_shape)
-		self.mean, self.var = np.zeros(self.param_shape), np.ones(self.param_shape)
-		self.grad_w, self.grad_b = np.ones(self.param_shape), np.zeros(self.param_shape)
-		self.batch_mean, self.batch_var = np.zeros(self.param_shape), np.ones(self.param_shape)
-
-		self.mom_w = np.zeros_like(self.w)
-		self.cache_w = np.zeros_like(self.w)
-		self.mom_b = np.zeros_like(self.b)
-		self.cache_b = np.zeros_like(self.b)
+		self.init_momentum_cache()
+		self.global_mean, self.global_var = np.zeros(self.param_shape), np.ones(self.param_shape)
 
 	def forward(self, x):
 		self.batch_mean = x.mean(axis=self.agg_axis).reshape(self.param_shape)
 		self.batch_var = x.var(axis=self.agg_axis).reshape(self.param_shape)
-		self.x_hat = (x - self.mean) / np.sqrt(self.var + self.eps)
+		self.x_hat = (x - self.batch_mean) / np.sqrt(self.batch_var + self.eps)
 		return self.w * self.x_hat + self.b
+
+	def predict_forward(self, x):
+		return self.w * (x - self.global_mean) / np.sqrt(self.global_var + self.eps) + self.b
 
 	def gradient(self, grad):
 		batch_size = grad.shape[0]
@@ -232,11 +225,11 @@ class BatchNormalization(Layer):
 		grad_x_hat = grad * self.w
 		return (
 			grad_x_hat
-			# - grad_x_hat.mean(axis=self.agg_axis).reshape(self.param_shape)
-			# - self.x_hat * (grad_x_hat * self.x_hat).mean(axis=self.agg_axis).reshape(self.param_shape)
-		) / np.sqrt(self.var + self.eps)
+			- grad_x_hat.mean(axis=self.agg_axis).reshape(self.param_shape)
+			- self.x_hat * (grad_x_hat * self.x_hat).mean(axis=self.agg_axis).reshape(self.param_shape)
+		) / np.sqrt(self.batch_var + self.eps)
 
-	def backward(self, grad_type):
-		self.gradient_funcs[grad_type]()
-		self.mean = self.batch_mean * (1.0 - self.momentum) + self.mean * self.momentum
-		self.var = self.batch_var * (1.0 - self.momentum) + self.var * self.momentum
+	def backward(self, opt_type):
+		self.gradient_funcs[opt_type]()
+		self.global_mean = self.batch_mean * (1.0 - self.momentum) + self.global_mean * self.momentum
+		self.global_var = self.batch_var * (1.0 - self.momentum) + self.global_var * self.momentum

@@ -10,23 +10,23 @@ class CNN(object):
 		# Conv > Normalization > Activation > Dropout > Pooling
 		self.conv1 = Conv(in_shape=x_shape, k_num=6, k_size=5)
 		self.bn1 = BatchNormalization(in_shape=self.conv1.out_shape)
-		self.relu1 = Activation(in_shape=self.conv1.out_shape, act_type="ReLU")
+		self.relu1 = Activation(act_type="ReLU")
 		self.pool1 = MaxPooling(in_shape=self.conv1.out_shape, k_size=2)
 		self.conv2 = Conv(in_shape=self.pool1.out_shape, k_num=16, k_size=3)
 		self.bn2 = BatchNormalization(in_shape=self.conv2.out_shape)
-		self.relu2 = Activation(in_shape=self.conv2.out_shape, act_type="ReLU")
+		self.relu2 = Activation(act_type="ReLU")
 		self.pool2 = MaxPooling(in_shape=self.conv2.out_shape, k_size=2)
 		self.fc1 = FullyConnect(self.pool2.out_shape, 120)
 		self.bn3 = BatchNormalization(in_shape=[120])
-		self.relu3 = Activation(in_shape=[120], act_type="ReLU")
+		self.relu3 = Activation(act_type="ReLU")
 		self.fc2 = FullyConnect([120], label_num)
-		self.softmax = Softmax(label_num)
+		self.softmax = Softmax()
 
 	def fit(self, train_x, labels):
 		n_data = train_x.shape[0]
 		train_y = np.zeros((n_data, 10))
 		train_y[np.arange(n_data), labels] = 1
-		for epoch in range(3):
+		for epoch in range(5):
 			#mini batch
 			permut=np.random.permutation(n_data//self.batch_size*self.batch_size).reshape([-1,self.batch_size])
 			for b_idx in range(permut.shape[0]):
@@ -73,15 +73,15 @@ class CNN(object):
 
 	def predict(self, x):
 		out_c1 = self.conv1.forward(x)
-		out_bn1 = self.bn1.forward(out_c1)
+		out_bn1 = self.bn1.predict_forward(out_c1)
 		out_r1 = self.relu1.forward(out_bn1)
 		out_p1 = self.pool1.forward(out_r1)
 		out_c2 = self.conv2.forward(out_p1)
-		out_bn2 = self.bn2.forward(out_c2)
+		out_bn2 = self.bn2.predict_forward(out_c2)
 		out_r2 = self.relu2.forward(out_bn2)
 		out_p2 = self.pool2.forward(out_r2)
 		out_fc1 = self.fc1.forward(out_p2)
-		out_bn3 = self.bn3.forward(out_fc1)
+		out_bn3 = self.bn3.predict_forward(out_fc1)
 		out_r3 = self.relu3.forward(out_bn3)
 		out_fc2 = self.fc2.forward(out_r3)
 		return self.softmax.forward(out_fc2)
@@ -97,11 +97,10 @@ def gradient_check(conv=True):
 	if conv:
 		layera = Conv(in_shape=[16,32,28], k_num=12, k_size=3)
 		layerb = Conv(in_shape=[16,32,28], k_num=12, k_size=3)
-		act_layer = Activation(in_shape=layera.out_shape, act_type='Tanh')
 	else:
 		layera = FullyConnect(in_shape=[16,32,28], out_dim=12)
 		layerb = FullyConnect(in_shape=[16,32,28], out_dim=12)
-		act_layer = Activation(in_shape=[12], act_type='Tanh')
+	act_layer = Activation(act_type='Tanh')
 	layerb.w = layera.w.copy()
 	layerb.b = layera.b.copy()
 	eps = 1e-4
