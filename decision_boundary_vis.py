@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mlp_advanced import MLP
+from mlp import MLP
 from gbdt import GBDT
 from xgboost import XGBoost
 from random_forest import RandomForest

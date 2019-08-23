@@ -8,19 +8,26 @@ class CNN(object):
 	def __init__(self, x_shape, label_num):
 		self.batch_size = 32
 		# Conv > Normalization > Activation > Dropout > Pooling
-		self.conv1 = Conv(in_shape=x_shape, k_num=6, k_size=5)
-		self.bn1 = BatchNormalization(in_shape=self.conv1.out_shape)
-		self.relu1 = Activation(act_type="ReLU")
-		self.pool1 = MaxPooling(in_shape=self.conv1.out_shape, k_size=2)
-		self.conv2 = Conv(in_shape=self.pool1.out_shape, k_num=16, k_size=3)
-		self.bn2 = BatchNormalization(in_shape=self.conv2.out_shape)
-		self.relu2 = Activation(act_type="ReLU")
-		self.pool2 = MaxPooling(in_shape=self.conv2.out_shape, k_size=2)
-		self.fc1 = FullyConnect(self.pool2.out_shape, 120)
-		self.bn3 = BatchNormalization(in_shape=[120])
-		self.relu3 = Activation(act_type="ReLU")
-		self.fc2 = FullyConnect([120], label_num)
-		self.softmax = Softmax()
+		conv1 = Conv(in_shape=x_shape, k_num=6, k_size=5)
+		bn1 = BatchNormalization(in_shape=conv1.out_shape)
+		relu1 = Activation(act_type="ReLU")
+		pool1 = MaxPooling(in_shape=conv1.out_shape, k_size=2)
+		conv2 = Conv(in_shape=pool1.out_shape, k_num=16, k_size=3)
+		bn2 = BatchNormalization(in_shape=conv2.out_shape)
+		relu2 = Activation(act_type="ReLU")
+		pool2 = MaxPooling(in_shape=conv2.out_shape, k_size=2)
+		fc1 = FullyConnect(pool2.out_shape, 120)
+		bn3 = BatchNormalization(in_shape=[120])
+		relu3 = Activation(act_type="ReLU")
+		fc2 = FullyConnect([120], label_num)
+		softmax = Softmax()
+
+		self.layers = [
+			conv1, bn1, relu1, pool1,
+			conv2, bn2, relu2, pool2,
+			fc1, bn3, relu3,
+			fc2, softmax
+		]
 
 	def fit(self, train_x, labels):
 		n_data = train_x.shape[0]
@@ -32,59 +39,26 @@ class CNN(object):
 			for b_idx in range(permut.shape[0]):
 				x0 = train_x[permut[b_idx,:]]
 				y = train_y[permut[b_idx,:]]
-				out_c1 = self.conv1.forward(x0)
-				out_bn1 = self.bn1.forward(out_c1)
-				out_r1 = self.relu1.forward(out_bn1)
-				out_p1 = self.pool1.forward(out_r1)
-				out_c2 = self.conv2.forward(out_p1)
-				out_bn2 = self.bn2.forward(out_c2)
-				out_r2 = self.relu2.forward(out_bn2)
-				out_p2 = self.pool2.forward(out_r2)
-				out_fc1 = self.fc1.forward(out_p2)
-				out_bn3 = self.bn3.forward(out_fc1)
-				out_r3 = self.relu3.forward(out_bn3)
-				out_fc2 = self.fc2.forward(out_r3)
-				out_sf = self.softmax.forward(out_fc2)
+
+				out = x0
+				for layer in self.layers:
+					out = layer.forward(out)
+
 				if b_idx%100==0:
-					print("epoch {} batch {} loss: {}".format(epoch, b_idx, self.softmax.loss(out_sf, y)))
+					print("epoch {} batch {} loss: {}".format(epoch, b_idx, self.layers[-1].loss(out, y)))
 
-				grad_sf = self.softmax.gradient(out_sf, y)
-				grad_fc2 = self.fc2.gradient(grad_sf)
-				grad_r3 = self.relu3.gradient(grad_fc2, out_r3)
-				grad_bn3 = self.bn3.gradient(grad_r3)
-				grad_fc1 = self.fc1.gradient(grad_bn3)
-				grad_p2 = self.pool2.gradient(grad_fc1)
-				grad_r2 = self.relu2.gradient(grad_p2, out_r2)
-				grad_bn2 = self.bn2.gradient(grad_r2)
-				grad_c2 = self.conv2.gradient(grad_bn2)
-				grad_p1 = self.pool1.gradient(grad_c2)
-				grad_r1 = self.relu1.gradient(grad_p1, out_r1)
-				grad_bn1 = self.bn1.gradient(grad_r1)
-				grad_c1 = self.conv1.gradient(grad_bn1)
-
-				self.conv1.backward("Adam")
-				self.bn1.backward("Adam")
-				self.conv2.backward("Adam")
-				self.bn2.backward("Adam")
-				self.fc2.backward("Adam")
-				self.bn3.backward("Adam")
-				self.fc1.backward("Adam")
+				grad = y
+				for layer in self.layers[::-1]:
+					grad = layer.gradient(grad)
+				for layer in self.layers:
+					layer.backward()
 			print('acc', self.get_accuracy(train_x, labels))
 
 	def predict(self, x):
-		out_c1 = self.conv1.forward(x)
-		out_bn1 = self.bn1.predict_forward(out_c1)
-		out_r1 = self.relu1.forward(out_bn1)
-		out_p1 = self.pool1.forward(out_r1)
-		out_c2 = self.conv2.forward(out_p1)
-		out_bn2 = self.bn2.predict_forward(out_c2)
-		out_r2 = self.relu2.forward(out_bn2)
-		out_p2 = self.pool2.forward(out_r2)
-		out_fc1 = self.fc1.forward(out_p2)
-		out_bn3 = self.bn3.predict_forward(out_fc1)
-		out_r3 = self.relu3.forward(out_bn3)
-		out_fc2 = self.fc2.forward(out_r3)
-		return self.softmax.forward(out_fc2)
+		out = x
+		for layer in self.layers:
+			out = layer.predict_forward(out) if isinstance(layer, BatchNormalization) else layer.forward(out)
+		return out
 
 	def get_accuracy(self, x, label):
 		n_correct = 0
@@ -112,8 +86,9 @@ def gradient_check(conv=True):
 		x_a[idxes] += eps
 		x_b[idxes] -= eps
 		out = act_layer.forward(layera.forward(x))
+		gradient = layera.gradient(act_layer.gradient(np.ones(out.shape)))
+
 		delta_out = (act_layer.forward(layera.forward(x_a)) - act_layer.forward(layerb.forward(x_b))).sum()
-		gradient = layera.gradient(act_layer.gradient(np.ones(out.shape), out))
 		# the output should be in the order of eps*eps 
 		print(idxes, (delta_out / eps / 2 - gradient[idxes]) / eps / eps)
 

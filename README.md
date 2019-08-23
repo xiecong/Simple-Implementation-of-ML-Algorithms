@@ -42,26 +42,19 @@ Implemented algorithms:
         * XGBoost Regression Tree
         * Shrinkage
 
-* Deep Learning Architecture
-    * Multilayer Perceptron
-    * Restricted Boltzman Machine
-    * Deep Belief Network
-    * Convolutional Neural Network
-        * Convolutional layers with vectorized img2col and col2img
-        * Max pooling layers
-        * Feedforward layers
-        * batch normalization
-        * WIP: drop out
-    * Recurrent neural network
-        * Backpropagation through time (BPTT)
-
 * Deep Learning Techniques
+    * Layers
+        * Feedforward layer (dense)
+        * Convolutional layer
+        * Max pooling layer
+        * Batch normalization layer
+        * Softmax layer for classification
+        * Activation layer
+            * ReLU
+            * Tanh
+            * Sigmoid
+        * WIP: Drop out layer
     * Mini Batch
-    * Activation function
-        * ReLU
-        * Tanh
-        * Sigmoid
-    * Softmax for classification
     * Loss functions
         * Squared error
         * Cross entropy
@@ -69,6 +62,16 @@ Implemented algorithms:
         * L1
         * L2
     * Gradient check
+
+* Deep Learning Architecture
+    * Multilayer Perceptron
+    * Restricted Boltzman Machine
+    * Deep Belief Network
+    * Convolutional Neural Network
+        * Convolutional layer with vectorized img2col and col2img
+    * Recurrent neural network
+        * Backpropagation through time (BPTT)
+    * Generative Adversarial Networks
 
 * Optimization Algorithms (See implementations in MLP or Regression)
 	* Stochastic Gradient Descent
@@ -98,7 +101,6 @@ Implemented algorithms:
 Work in progress:
 * Long short-term memory
 * Variational autoencoder (VAE)
-* Generative Adversarial Networks
 * Deep Q-Network (Reinforcement learning)
 
 Feel free to use the code. Please contact me if you have any question: xiecng [at] gmail.com

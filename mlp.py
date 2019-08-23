@@ -201,6 +201,6 @@ def main():
     print(sum(np.argmax(mlp.predict(train_x), axis=1) == train_y)/train_y.shape[0])
     print(sum(np.argmax(mlp.predict(test_x), axis=1) == test_y)/test_y.shape[0])
 
-    
+
 if __name__ == "__main__":
     main()

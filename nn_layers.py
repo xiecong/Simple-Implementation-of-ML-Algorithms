@@ -37,11 +37,12 @@ def col2img(col, in_shape, k_size, stride):
 
 
 class Layer(object):
-	def __init__(self):
+	def __init__(self, optimizer='Adam'):
 		self.gradient_funcs = {'Adam':self.adam, "SGD": self.sgd}
 		self.learning_rate = 1e-3
 		self.weight_decay = 1e-4
 		self.eps = 1e-20
+		self.optimizer = optimizer
 
 	def init_momentum_cache(self):
 		self.mom_w, self.cache_w = np.zeros_like(self.w), np.zeros_like(self.w)
@@ -53,9 +54,9 @@ class Layer(object):
 	def gradient(self, grad):
 		pass
 
-	def backward(self, opt_type):
+	def backward(self):
 		self.regularize()
-		self.gradient_funcs[opt_type]()
+		self.gradient_funcs[self.optimizer]()
 
 	def regularize(self):
 		self.w *= (1 - self.weight_decay)
@@ -129,24 +130,26 @@ class MaxPooling(Layer):
 		out = col[range(col.shape[0]),max_idx].reshape(self.out_shape[1],self.out_shape[2],x.shape[0], self.in_shape[0])
 		return out.transpose(2, 3, 0, 1)
 
+	def backward(self):
+		pass
 
 class Softmax(Layer):
 	def __init__(self):
 		super(Softmax, self).__init__()
 
-	def forward(self, x):
-		return self.predict(x)
-
 	def loss(self, out, y):
 		return -(np.multiply(y, np.log(out + self.eps))).mean()
 
-	def predict(self, x):
+	def forward(self, x):
 		out = np.exp(x - np.max(x, axis=1).reshape([-1, 1]))
-		return out / (np.sum(out, axis=1).reshape([-1, 1]) + self.eps)
+		self.out = out / (np.sum(out, axis=1).reshape([-1, 1]) + self.eps)
+		return self.out
 
-	def gradient(self, out, y):
-		return out - y
+	def gradient(self, y):
+		return self.out - y
 
+	def backward(self):
+		pass
 
 class FullyConnect(Layer):
 	def __init__(self, in_shape, out_dim):
@@ -175,8 +178,15 @@ class Activation(Layer):
 		super(Activation, self).__init__()
 		self.act_funcs = {'ReLU': self.relu, 'Sigmoid': self.sigmoid, 'Tanh': self.tanh}
 		self.dact_funcs = {'ReLU': self.drelu, 'Sigmoid': self.dsigmoid, 'Tanh': self.dtanh}
-		self.forward = self.act_funcs[act_type]
-		self.gradient = self.dact_funcs[act_type]
+		self.act_func = self.act_funcs[act_type]
+		self.dact_func = self.dact_funcs[act_type]
+
+	def forward(self, x):
+		self.out = self.act_func(x)
+		return self.out
+
+	def gradient(self, grad):
+		return self.dact_func(grad, self.out)
 
 	def relu(self, x):
 		return np.maximum(x, 0)
@@ -197,6 +207,8 @@ class Activation(Layer):
 	def dtanh(self, grad, act):
 		return np.multiply(grad, 1 - np.square(act))
 
+	def backward(self):
+		pass
 
 class BatchNormalization(Layer):
 	def __init__(self, in_shape):
@@ -205,14 +217,18 @@ class BatchNormalization(Layer):
 		self.param_shape = (1, in_shape[0]) if len(in_shape) == 1 else (1, in_shape[0], 1, 1)
 		self.agg_axis = 0 if len(in_shape) == 1 else (0, 2, 3)  # cnn over channel
 		self.momentum = 0.99
+		self.weight_decay = 0
 		self.w, self.b = np.ones(self.param_shape), np.zeros(self.param_shape)
 		self.init_momentum_cache()
 		self.global_mean, self.global_var = np.zeros(self.param_shape), np.ones(self.param_shape)
 
 	def forward(self, x):
-		self.batch_mean = x.mean(axis=self.agg_axis).reshape(self.param_shape)
-		self.batch_var = x.var(axis=self.agg_axis).reshape(self.param_shape)
-		self.x_hat = (x - self.batch_mean) / np.sqrt(self.batch_var + self.eps)
+		batch_mean = x.mean(axis=self.agg_axis).reshape(self.param_shape)
+		batch_var = x.var(axis=self.agg_axis).reshape(self.param_shape)
+		self.global_mean = batch_mean * (1.0 - self.momentum) + self.global_mean * self.momentum
+		self.global_var = batch_var * (1.0 - self.momentum) + self.global_var * self.momentum
+		self.batch_var_sqrt = np.sqrt(batch_var + self.eps)
+		self.x_hat = (x - batch_mean) / self.batch_var_sqrt
 		return self.w * self.x_hat + self.b
 
 	def predict_forward(self, x):
@@ -227,9 +243,4 @@ class BatchNormalization(Layer):
 			grad_x_hat
 			- grad_x_hat.mean(axis=self.agg_axis).reshape(self.param_shape)
 			- self.x_hat * (grad_x_hat * self.x_hat).mean(axis=self.agg_axis).reshape(self.param_shape)
-		) / np.sqrt(self.batch_var + self.eps)
-
-	def backward(self, opt_type):
-		self.gradient_funcs[opt_type]()
-		self.global_mean = self.batch_mean * (1.0 - self.momentum) + self.global_mean * self.momentum
-		self.global_var = self.batch_var * (1.0 - self.momentum) + self.global_var * self.momentum
+		) / self.batch_var_sqrt
