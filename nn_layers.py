@@ -37,9 +37,9 @@ def col2img(col, in_shape, k_size, stride):
 
 
 class Layer(object):
-	def __init__(self, optimizer='Adam'):
+	def __init__(self, lr=1e-3, optimizer='Adam'):
 		self.gradient_funcs = {'Adam':self.adam, "SGD": self.sgd}
-		self.learning_rate = 1e-3
+		self.learning_rate = lr
 		self.weight_decay = 1e-4
 		self.eps = 1e-20
 		self.optimizer = optimizer
@@ -79,12 +79,12 @@ class Layer(object):
 
 
 class Conv(Layer):
-	def __init__(self, in_shape, k_size, k_num, stride=1):
-		super(Conv, self).__init__()
+	def __init__(self, in_shape, k_size, k_num, stride=1, lr=1e-3):
+		super(Conv, self).__init__(lr=lr)
 		self.in_shape = in_shape
 		channel, height, width = in_shape
 		self.k_size = k_size
-		self.w = np.random.randn(channel*k_size*k_size, k_num)
+		self.w = np.random.randn(channel*k_size*k_size, k_num) / np.sqrt(channel) / k_size
 		self.b = np.random.randn(1,k_num)
 		self.init_momentum_cache()
 
@@ -152,10 +152,10 @@ class Softmax(Layer):
 		pass
 
 class FullyConnect(Layer):
-	def __init__(self, in_shape, out_dim):
-		super(FullyConnect, self).__init__()
+	def __init__(self, in_shape, out_dim, lr=1e-3):
+		super(FullyConnect, self).__init__(lr=lr)
 		self.in_shape = in_shape
-		self.w = np.random.randn(np.prod(self.in_shape), out_dim)
+		self.w = np.random.randn(np.prod(self.in_shape), out_dim) / np.sqrt(np.prod(self.in_shape))
 		self.b = np.random.randn(1, out_dim)
 		self.init_momentum_cache()
 
@@ -211,8 +211,8 @@ class Activation(Layer):
 		pass
 
 class BatchNormalization(Layer):
-	def __init__(self, in_shape):
-		super(BatchNormalization, self).__init__()
+	def __init__(self, in_shape, lr=1e-3):
+		super(BatchNormalization, self).__init__(lr=lr)
 		self.in_shape = in_shape
 		self.param_shape = (1, in_shape[0]) if len(in_shape) == 1 else (1, in_shape[0], 1, 1)
 		self.agg_axis = 0 if len(in_shape) == 1 else (0, 2, 3)  # cnn over channel
