@@ -84,8 +84,8 @@ class Conv(Layer):
 		self.in_shape = in_shape
 		channel, height, width = in_shape
 		self.k_size = k_size
-		self.w = np.random.randn(channel*k_size*k_size, k_num) / np.sqrt(channel) / k_size
-		self.b = np.random.randn(1,k_num)
+		self.w = np.random.randn(channel*k_size*k_size, k_num) / np.sqrt(channel / 2) / k_size
+		self.b = np.zeros((1, k_num))
 		self.init_momentum_cache()
 
 		self.out_shape = (k_num, (height-k_size)//stride+1, (width-k_size)//stride+1)
@@ -155,8 +155,8 @@ class FullyConnect(Layer):
 	def __init__(self, in_shape, out_dim, lr=1e-3):
 		super(FullyConnect, self).__init__(lr=lr)
 		self.in_shape = in_shape
-		self.w = np.random.randn(np.prod(self.in_shape), out_dim) / np.sqrt(np.prod(self.in_shape))
-		self.b = np.random.randn(1, out_dim)
+		self.w = np.random.randn(np.prod(self.in_shape), out_dim) / np.sqrt(np.prod(self.in_shape) / 2)
+		self.b = np.zeros((1, out_dim))
 		self.init_momentum_cache()
 
 	def forward(self, x):

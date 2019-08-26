@@ -1,6 +1,6 @@
 import numpy as np
-from sklearn.datasets import fetch_openml, load_digits
-from nn_layers import FullyConnect, Activation, Softmax
+from sklearn.datasets import fetch_openml
+from nn_layers import FullyConnect, Activation, Softmax, BatchNormalization
 import matplotlib.pyplot as plt
 
 
@@ -23,12 +23,19 @@ def bw_grad(pred, y):
 
 
 class NN(object):
-	def __init__(self, layers, activations, lr):
+	def __init__(self, layers, activations, lr, bn=False):
 		self.layers = []
 		self.in_shape = layers[0]
 		for d_in, d_out, act_type in zip(layers[:-1], layers[1:], activations):
 			self.layers.append(FullyConnect([d_in], d_out, lr=lr))
+			if bn: self.layers.append(BatchNormalization([d_out]))
 			self.layers.append(Activation(act_type=act_type))
+
+	def predict(self, x):
+		out = x
+		for layer in self.layers:
+			out = layer.predict_forward(out) if isinstance(layer, BatchNormalization) else layer.forward(out)
+		return out
 
 	def forward(self, x):
 		out = x
@@ -48,20 +55,19 @@ class NN(object):
 
 class GAN(object):
 	def __init__(self):
+		self.n_epochs = 5
 		self.batch_size = 32
-		self.gen_input = 20
-		self.dis_input = 64
-		self.generator = NN([self.gen_input, 50, self.dis_input], ['ReLU', 'Tanh'], lr=1e-3)
-		self.discriminator = NN([self.dis_input, 50, 1], ['ReLU', 'Sigmoid'], lr=1e-3)
+		self.gen_input = 100
+		self.generator = NN([self.gen_input, 256, 512, 1024, 784], ['ReLU', 'ReLU', 'ReLU', 'Tanh'], lr=1e-3, bn=True)
+		self.discriminator = NN([784, 1024, 512, 256, 1], ['ReLU', 'ReLU', 'ReLU', 'Sigmoid'], lr=5e-4, bn=False)
 
 	def fit(self, x):
-		epochs = 201
 		y_dis = np.zeros((2 * self.batch_size, 1))
 		y_dis[:self.batch_size, 0] = 1
 		y_gen = np.ones((2 * self.batch_size, 1))
 		generated_img = []
 
-		for epoch in range(epochs):
+		for epoch in range(self.n_epochs):
 			permut=np.random.permutation(x.shape[0]//self.batch_size*self.batch_size).reshape([-1,self.batch_size])
 			for b_idx in range(permut.shape[0]):
 				x_dis_train = np.concatenate([
@@ -77,23 +83,20 @@ class GAN(object):
 				grad = self.discriminator.gradient(bce_grad(pred_gen, y_gen))
 				self.generator.gradient(grad)
 				self.generator.backward()
+				print(f'Epoch {epoch}', 'discriminator', bce_loss(pred_dis, y_dis), 'generator', bce_loss(pred_gen, y_gen))
 
-			generated_img.append(self.generator.forward(noise(10, self.gen_input)))
-			print(f'Epoch {epoch}', 'discriminator', bce_loss(pred_dis, y_dis), 'generator', bce_loss(pred_gen, y_gen))
+			generated_img.append(self.generator.predict(noise(10, self.gen_input)))
 		return generated_img
 
 
 def main():
-	data = load_digits()
-	x = data.data
-
-	x = 2*(x / x.max())-1
+	x, _ = fetch_openml('mnist_784', return_X_y=True, data_home='data')
+	x = 2 * (x / x.max()) - 1
 	gan = GAN()
 	images = gan.fit(x)
-	for i in range(6):
-		for j, img in enumerate(images[i*40]):
-			plt.subplot(6, 10, i * 10 + j + 1)
-			plt.imshow(img.reshape(8, 8), cmap='gray', vmin=-1, vmax=1)
+	for i, img in enumerate(np.array(images).reshape(-1, 784)):
+		plt.subplot(len(images), 10, i + 1)
+		plt.imshow(img.reshape(28, 28), cmap='gray', vmin=-1, vmax=1)
 	plt.show()
 
 if __name__ == "__main__":
