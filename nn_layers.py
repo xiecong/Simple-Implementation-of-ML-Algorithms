@@ -176,8 +176,8 @@ class FullyConnect(Layer):
 class Activation(Layer):
 	def __init__(self, act_type):
 		super(Activation, self).__init__()
-		self.act_funcs = {'ReLU': self.relu, 'Sigmoid': self.sigmoid, 'Tanh': self.tanh}
-		self.dact_funcs = {'ReLU': self.drelu, 'Sigmoid': self.dsigmoid, 'Tanh': self.dtanh}
+		self.act_funcs = {'ReLU': self.relu, 'Sigmoid': self.sigmoid, 'Tanh': self.tanh, 'LeakyReLU': self.leaky_relu}
+		self.dact_funcs = {'ReLU': self.drelu, 'Sigmoid': self.dsigmoid, 'Tanh': self.dtanh, 'LeakyReLU': self.dleaky_relu}
 		self.act_func = self.act_funcs[act_type]
 		self.dact_func = self.dact_funcs[act_type]
 
@@ -189,7 +189,10 @@ class Activation(Layer):
 		return self.dact_func(grad, self.out)
 
 	def relu(self, x):
-		return np.maximum(x, 0)
+		return x * (x > 0)
+
+	def leaky_relu(self, x):
+		return x * ((x > 0) * 0.99 + 0.01)
 
 	def sigmoid(self, x):
 		return 1 / (1 + np.exp(-x))
@@ -198,8 +201,10 @@ class Activation(Layer):
 		return np.tanh(x)
 
 	def drelu(self, grad, act):
-		grad[act <= 0] = 0
-		return grad
+		return grad * (act > 0)
+
+	def dleaky_relu(self, grad, act):
+		return grad * ((act > 0) * 0.99 + 0.01)
 
 	def dsigmoid(self, grad, act):
 		return np.multiply(grad, act - np.square(act))

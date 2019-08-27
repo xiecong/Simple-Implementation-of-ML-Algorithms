@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.datasets import fetch_openml
 from nn_layers import FullyConnect, Activation, Softmax, BatchNormalization
 import matplotlib.pyplot as plt
+# TO DO dcgan
 
 
 def noise(n_x, n_d):
@@ -15,21 +16,10 @@ def bce_grad(pred, y):
 	eps = 1e-20
 	return (- y / (pred + eps) + (1 - y) / (1 - pred + eps)) / pred.shape[0]
 
-def bw_loss(pred, y):
-	return (y * (1 - pred) + (1 - y) * pred).mean()
-
-def bw_grad(pred, y):
-	return (1 - 2 * y) / pred.shape[0]
-
 
 class NN(object):
-	def __init__(self, layers, activations, lr, bn=False):
-		self.layers = []
-		self.in_shape = layers[0]
-		for d_in, d_out, act_type in zip(layers[:-1], layers[1:], activations):
-			self.layers.append(FullyConnect([d_in], d_out, lr=lr))
-			if bn: self.layers.append(BatchNormalization([d_out]))
-			self.layers.append(Activation(act_type=act_type))
+	def __init__(self, layers):
+		self.layers = layers
 
 	def predict(self, x):
 		out = x
@@ -55,11 +45,33 @@ class NN(object):
 
 class GAN(object):
 	def __init__(self):
-		self.n_epochs = 5
-		self.batch_size = 32
+		self.n_epochs, self.batch_size = 5, 32
 		self.gen_input = 100
-		self.generator = NN([self.gen_input, 256, 512, 1024, 784], ['ReLU', 'ReLU', 'ReLU', 'Tanh'], lr=1e-3, bn=True)
-		self.discriminator = NN([784, 1024, 512, 256, 1], ['ReLU', 'ReLU', 'ReLU', 'Sigmoid'], lr=5e-4, bn=False)
+		gen_lr, dis_lr = 2e-3, 5e-4
+		self.generator = NN([
+			FullyConnect([self.gen_input], 256, lr=gen_lr),
+			BatchNormalization([256], lr=gen_lr),
+			Activation(act_type='ReLU'),
+			FullyConnect([256], 512, lr=gen_lr),
+			BatchNormalization([512], lr=gen_lr),
+			Activation(act_type='ReLU'),
+			FullyConnect([512], 1024, lr=gen_lr),
+			BatchNormalization([1024], lr=gen_lr),
+			Activation(act_type='ReLU'),
+			FullyConnect([1024], 784, lr=gen_lr),
+			BatchNormalization([784], lr=gen_lr),
+			Activation(act_type='Tanh')
+		])
+		self.discriminator = NN([
+			FullyConnect([784], 1024, lr=dis_lr),
+			Activation(act_type='ReLU'),
+			FullyConnect([1024], 512, lr=dis_lr),
+			Activation(act_type='ReLU'),
+			FullyConnect([512], 256, lr=dis_lr),
+			Activation(act_type='ReLU'),
+			FullyConnect([256], 1, lr=dis_lr),
+			Activation(act_type='Sigmoid')
+		])
 
 	def fit(self, x):
 		y_dis = np.zeros((2 * self.batch_size, 1))
@@ -83,7 +95,7 @@ class GAN(object):
 				grad = self.discriminator.gradient(bce_grad(pred_gen, y_gen))
 				self.generator.gradient(grad)
 				self.generator.backward()
-				print(f'Epoch {epoch}', 'discriminator', bce_loss(pred_dis, y_dis), 'generator', bce_loss(pred_gen, y_gen))
+				print(f'Epoch {epoch} batch {b_idx} discriminator:', bce_loss(pred_dis, y_dis), 'generator:', bce_loss(pred_gen, y_gen))
 
 			generated_img.append(self.generator.predict(noise(10, self.gen_input)))
 		return generated_img
@@ -100,4 +112,4 @@ def main():
 	plt.show()
 
 if __name__ == "__main__":
-    main()
+	main()
