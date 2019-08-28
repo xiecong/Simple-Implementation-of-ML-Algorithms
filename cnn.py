@@ -6,20 +6,20 @@ from nn_layers import Conv, MaxPooling, FullyConnect, Activation, Softmax, Batch
 
 class CNN(object):
 	def __init__(self, x_shape, label_num):
-		self.batch_size = 32
+		self.batch_size, lr = 32, 1e-3
 		# Conv > Normalization > Activation > Dropout > Pooling
-		conv1 = Conv(in_shape=x_shape, k_num=6, k_size=5)
-		bn1 = BatchNormalization(in_shape=conv1.out_shape)
+		conv1 = Conv(in_shape=x_shape, k_num=6, k_size=5, lr=lr)
+		bn1 = BatchNormalization(in_shape=conv1.out_shape, lr=lr)
 		relu1 = Activation(act_type="ReLU")
 		pool1 = MaxPooling(in_shape=conv1.out_shape, k_size=2)
-		conv2 = Conv(in_shape=pool1.out_shape, k_num=16, k_size=3)
-		bn2 = BatchNormalization(in_shape=conv2.out_shape)
+		conv2 = Conv(in_shape=pool1.out_shape, k_num=16, k_size=3, lr=lr)
+		bn2 = BatchNormalization(in_shape=conv2.out_shape, lr=lr)
 		relu2 = Activation(act_type="ReLU")
 		pool2 = MaxPooling(in_shape=conv2.out_shape, k_size=2)
-		fc1 = FullyConnect(pool2.out_shape, 120)
-		bn3 = BatchNormalization(in_shape=[120])
+		fc1 = FullyConnect(pool2.out_shape, 120, lr=lr)
+		bn3 = BatchNormalization(in_shape=[120], lr=lr)
 		relu3 = Activation(act_type="ReLU")
-		fc2 = FullyConnect([120], label_num)
+		fc2 = FullyConnect([120], label_num, lr=lr)
 		softmax = Softmax()
 
 		self.layers = [
@@ -36,6 +36,7 @@ class CNN(object):
 		for epoch in range(3):
 			#mini batch
 			permut=np.random.permutation(n_data//self.batch_size*self.batch_size).reshape([-1,self.batch_size])
+			total_loss = 0
 			for b_idx in range(permut.shape[0]):
 				x0 = train_x[permut[b_idx,:]]
 				y = train_y[permut[b_idx,:]]
@@ -44,15 +45,16 @@ class CNN(object):
 				for layer in self.layers:
 					out = layer.forward(out)
 
+				batch_loss = self.layers[-1].loss(out, y)
 				if b_idx%100==0:
-					print("epoch {} batch {} loss: {}".format(epoch, b_idx, self.layers[-1].loss(out, y)))
-
+					print("epoch {} batch {} loss: {}".format(epoch, b_idx, batch_loss))
 				grad = y
 				for layer in self.layers[::-1]:
 					grad = layer.gradient(grad)
 				for layer in self.layers:
 					layer.backward()
-			print('acc', self.get_accuracy(train_x, labels))
+				total_loss += batch_loss
+			print('acc', self.get_accuracy(train_x, labels), 'avg batch loss', total_loss / permut.shape[0])
 
 	def predict(self, x):
 		out = x

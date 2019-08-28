@@ -1,6 +1,5 @@
 import numpy as np
 # will add dropout
-# will add padding to convolutional layer
 
 
 def img2col_index(x_shape, k_size, stride=1):
@@ -16,7 +15,7 @@ def img2col_index(x_shape, k_size, stride=1):
 	w_indices += w_off_set.reshape(-1,1)
 	return c_idices, h_indices, w_indices
 
-def img2col(img, k_size, stride=1):	
+def img2col(img, k_size, stride=1):
 	batch_size, in_c, in_h, in_w = img.shape
 	c_idices, h_indices, w_indices = img2col_index([in_c, in_h, in_w], k_size, stride)
 	return img[:, c_idices, h_indices, w_indices].transpose(1,0,2).reshape(-1, in_c * k_size * k_size)
@@ -79,7 +78,7 @@ class Layer(object):
 
 
 class Conv(Layer):
-	def __init__(self, in_shape, k_size, k_num, stride=1, lr=1e-3):
+	def __init__(self, in_shape, k_size, k_num, stride=1, padding=0, lr=1e-3):
 		super(Conv, self).__init__(lr=lr)
 		self.in_shape = in_shape
 		channel, height, width = in_shape
@@ -88,22 +87,37 @@ class Conv(Layer):
 		self.b = np.zeros((1, k_num))
 		self.init_momentum_cache()
 
-		self.out_shape = (k_num, (height-k_size)//stride+1, (width-k_size)//stride+1)
-		self.stride = stride
+		self.out_shape = (k_num, (height + 2 * padding - k_size)//stride+1, (width + 2 * padding - k_size)//stride+1)
+		self.stride, self.padding = stride, padding
 
 	def forward(self, x):
-		self.input = img2col(x, self.k_size, self.stride)
+		p = self.padding
+		x_padded = np.pad(x, ((0, 0), (0, 0), (p, p), (p, p)), 'constant')
+		self.input = img2col(x_padded, self.k_size, self.stride)
 		out = self.input.dot(self.w)+self.b
 		out = out.reshape(self.out_shape[1], self.out_shape[2], x.shape[0], self.out_shape[0])
 		return out.transpose(2, 3, 0, 1)
 
-	def gradient(self, grad):		
+	def gradient(self, grad):
 		batch_size = grad.shape[0]
 		grad_out = grad.transpose(2,3,0,1).reshape([-1, self.out_shape[0]])
 		self.grad_w = self.input.T.dot(grad_out) / batch_size
 		self.grad_b = np.ones((1, grad_out.shape[0])).dot(grad_out) / batch_size
 		self.input = None
-		return col2img(grad_out.dot(self.w.T), self.in_shape, self.k_size, self.stride)
+		grad_padded = col2img(grad_out.dot(self.w.T), self.in_shape, self.k_size, self.stride)
+		p = self.padding
+		return grad_padded if p == 0 else grad_padded[:, :, p:-p, p:-p]
+
+
+class TrasposedConv(Layer):
+	def __init__(self, in_shape, k_size, k_num, stride=1, padding=0, lr=1e-3):
+		pass
+
+	def forward(self, x):
+		pass
+
+	def gradient(self, grad):
+		pass
 
 
 class MaxPooling(Layer):
@@ -160,12 +174,10 @@ class FullyConnect(Layer):
 		self.init_momentum_cache()
 
 	def forward(self, x):
-		self.input = x.reshape([x.shape[0],-1])
+		self.input = x.reshape([x.shape[0], np.prod(self.in_shape)])
 		return self.input.dot(self.w) + self.b
 
 	def gradient(self, grad):
-		# grad_act=grad_act.reshape([grad_act.shape[0], grad_act.shape[1]])
-		#grad_out = self.dact_func(grad_act, act)
 		batch_size = grad.shape[0]
 		self.grad_w = self.input.T.dot(grad) / batch_size
 		self.grad_b = np.ones((1, batch_size)).dot(grad) / batch_size
