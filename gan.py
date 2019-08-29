@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.datasets import fetch_openml
-from nn_layers import FullyConnect, Activation, Softmax, BatchNormalization
+from nn_layers import FullyConnect, Activation, Softmax, BatchNormalization, Conv, TrasposedConv
 import matplotlib.pyplot as plt
 # TO DO dcgan
 
@@ -47,31 +47,38 @@ class GAN(object):
 	def __init__(self):
 		self.n_epochs, self.batch_size = 5, 32
 		self.gen_input = 100
+		dc_gan()
+		
+	def vanilla_gan():
 		gen_lr, dis_lr = 2e-3, 5e-4
 		self.generator = NN([
-			FullyConnect([self.gen_input], 256, lr=gen_lr),
+			FullyConnect([self.gen_input], [256], lr=gen_lr),
 			BatchNormalization([256], lr=gen_lr),
 			Activation(act_type='ReLU'),
-			FullyConnect([256], 512, lr=gen_lr),
+			FullyConnect([256], [512], lr=gen_lr),
 			BatchNormalization([512], lr=gen_lr),
 			Activation(act_type='ReLU'),
-			FullyConnect([512], 1024, lr=gen_lr),
+			FullyConnect([512], [1024], lr=gen_lr),
 			BatchNormalization([1024], lr=gen_lr),
 			Activation(act_type='ReLU'),
-			FullyConnect([1024], 784, lr=gen_lr),
+			FullyConnect([1024], [784], lr=gen_lr),
 			BatchNormalization([784], lr=gen_lr),
 			Activation(act_type='Tanh')
 		])
 		self.discriminator = NN([
-			FullyConnect([784], 1024, lr=dis_lr),
+			FullyConnect([784], [1024], lr=dis_lr),
 			Activation(act_type='ReLU'),
-			FullyConnect([1024], 512, lr=dis_lr),
+			FullyConnect([1024], [512], lr=dis_lr),
 			Activation(act_type='ReLU'),
-			FullyConnect([512], 256, lr=dis_lr),
+			FullyConnect([512], [256], lr=dis_lr),
 			Activation(act_type='ReLU'),
-			FullyConnect([256], 1, lr=dis_lr),
+			FullyConnect([256], [1], lr=dis_lr),
 			Activation(act_type='Sigmoid')
 		])
+
+	def dc_gan():
+		gen_lr, dis_lr = 2e-3, 5e-4
+		pass
 
 	def fit(self, x):
 		y_dis = np.zeros((2 * self.batch_size, 1))

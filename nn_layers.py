@@ -1,5 +1,6 @@
 import numpy as np
 # will add dropout
+# del grad after use
 
 
 def img2col_index(x_shape, k_size, stride=1):
@@ -111,13 +112,28 @@ class Conv(Layer):
 
 class TrasposedConv(Layer):
 	def __init__(self, in_shape, k_size, k_num, stride=1, padding=0, lr=1e-3):
-		pass
+		super(TrasposedConv, self).__init__(lr=lr)
+		self.in_shape = in_shape
+		channel, height, width = in_shape
+		self.k_size = k_size
+		self.w = np.random.randn(channel, k_num*k_size*k_size) / np.sqrt(k_num / 2) / k_size
+		self.b = np.zeros((1, k_num*k_size*k_size))
+		self.init_momentum_cache()
+
+		self.out_shape = (k_num, stride * (height - 1) + k_size, stride * (width - 1) + k_size)
+		self.stride = stride
 
 	def forward(self, x):
-		pass
+		self.input = x.transpose(2,3,0,1).reshape([-1, self.in_shape[0]])
+		out_cols = self.input.dot(self.w) + self.b
+		return col2img(out_cols, self.out_shape, self.k_size, self.stride)
 
 	def gradient(self, grad):
-		pass
+		batch_size = grad.shape[0]
+		grad_col = img2col(grad, self.k_size, self.stride)
+		self.grad_w = self.input.T.dot(grad_col) / batch_size
+		self.grad_b = np.ones((1, grad_col.shape[0])).dot(grad_col) / batch_size
+		return grad_col.dot(self.w.T).reshape(self.in_shape[1], self.in_shape[2], batch_size, self.in_shape[0]).transpose(2, 3, 0, 1)
 
 
 class MaxPooling(Layer):
@@ -166,16 +182,17 @@ class Softmax(Layer):
 		pass
 
 class FullyConnect(Layer):
-	def __init__(self, in_shape, out_dim, lr=1e-3):
+	def __init__(self, in_shape, out_shape, lr=1e-3):
 		super(FullyConnect, self).__init__(lr=lr)
-		self.in_shape = in_shape
-		self.w = np.random.randn(np.prod(self.in_shape), out_dim) / np.sqrt(np.prod(self.in_shape) / 2)
+		self.in_shape, self.out_shape = in_shape, out_shape
+		in_dim, out_dim = np.prod(in_shape), np.prod(out_shape)
+		self.w = np.random.randn(in_dim, out_dim) / np.sqrt(in_dim / 2)
 		self.b = np.zeros((1, out_dim))
 		self.init_momentum_cache()
 
 	def forward(self, x):
 		self.input = x.reshape([x.shape[0], np.prod(self.in_shape)])
-		return self.input.dot(self.w) + self.b
+		return (self.input.dot(self.w) + self.b).reshape([-1] + list(self.out_shape))
 
 	def gradient(self, grad):
 		batch_size = grad.shape[0]

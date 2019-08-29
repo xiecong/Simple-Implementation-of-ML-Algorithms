@@ -16,10 +16,10 @@ class CNN(object):
 		bn2 = BatchNormalization(in_shape=conv2.out_shape, lr=lr)
 		relu2 = Activation(act_type="ReLU")
 		pool2 = MaxPooling(in_shape=conv2.out_shape, k_size=2)
-		fc1 = FullyConnect(pool2.out_shape, 120, lr=lr)
+		fc1 = FullyConnect(pool2.out_shape, [120], lr=lr)
 		bn3 = BatchNormalization(in_shape=[120], lr=lr)
 		relu3 = Activation(act_type="ReLU")
-		fc2 = FullyConnect([120], label_num, lr=lr)
+		fc2 = FullyConnect([120], [label_num], lr=lr)
 		softmax = Softmax()
 
 		self.layers = [
