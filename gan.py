@@ -47,9 +47,9 @@ class GAN(object):
 	def __init__(self):
 		self.n_epochs, self.batch_size = 5, 32
 		self.gen_input = 100
-		dc_gan()
+		self.dc_gan()
 		
-	def vanilla_gan():
+	def vanilla_gan(self):
 		gen_lr, dis_lr = 2e-3, 5e-4
 		self.generator = NN([
 			FullyConnect([self.gen_input], [256], lr=gen_lr),
@@ -61,12 +61,12 @@ class GAN(object):
 			FullyConnect([512], [1024], lr=gen_lr),
 			BatchNormalization([1024], lr=gen_lr),
 			Activation(act_type='ReLU'),
-			FullyConnect([1024], [784], lr=gen_lr),
-			BatchNormalization([784], lr=gen_lr),
+			FullyConnect([1024], [1,28,28], lr=gen_lr),
+			BatchNormalization([1,28,28], lr=gen_lr),
 			Activation(act_type='Tanh')
 		])
 		self.discriminator = NN([
-			FullyConnect([784], [1024], lr=dis_lr),
+			FullyConnect([1,28,28], [1024], lr=dis_lr),
 			Activation(act_type='ReLU'),
 			FullyConnect([1024], [512], lr=dis_lr),
 			Activation(act_type='ReLU'),
@@ -76,9 +76,40 @@ class GAN(object):
 			Activation(act_type='Sigmoid')
 		])
 
-	def dc_gan():
+	def dc_gan(self):
 		gen_lr, dis_lr = 2e-3, 5e-4
-		pass
+		gen_in_shape = (512, 4, 4)
+		tconv1 = TrasposedConv(gen_in_shape, k_size=4, k_num=256, stride=2, padding=1, lr=gen_lr)
+		tconv2 = TrasposedConv(tconv1.out_shape, k_size=4, k_num=128, stride=2, padding=2, lr=gen_lr)
+		tconv3 = TrasposedConv(tconv2.out_shape, k_size=4, k_num=1, stride=2, padding=1, lr=gen_lr)
+		self.generator = NN([
+			FullyConnect([self.gen_input], gen_in_shape, lr=gen_lr),
+			BatchNormalization(gen_in_shape, lr=gen_lr),
+			Activation(act_type='ReLU'),
+			tconv1,
+			BatchNormalization(tconv1.out_shape, lr=gen_lr),
+			Activation(act_type='ReLU'),
+			tconv2,
+			BatchNormalization(tconv2.out_shape, lr=gen_lr),
+			Activation(act_type='ReLU'),
+			tconv3
+		])
+		conv1 = Conv((1, 28, 28), k_size=4, k_num=128, stride=2, padding=1, lr=dis_lr)
+		conv2 = Conv(conv1.out_shape, k_size=4, k_num=256, stride=2, padding=2, lr=dis_lr)
+		conv3 = Conv(conv2.out_shape, k_size=4, k_num=512, stride=2, padding=1, lr=dis_lr)
+		self.discriminator = NN([
+			conv1,
+			BatchNormalization(conv1.out_shape, lr=gen_lr),
+			Activation(act_type='LeakyReLU'),
+			conv2,
+			BatchNormalization(conv2.out_shape, lr=gen_lr),
+			Activation(act_type='LeakyReLU'),
+			conv3,
+			BatchNormalization(conv3.out_shape, lr=gen_lr),
+			Activation(act_type='LeakyReLU'),
+			FullyConnect(conv3.out_shape, [1], lr=dis_lr),
+			Activation(act_type='Sigmoid')
+		])
 
 	def fit(self, x):
 		y_dis = np.zeros((2 * self.batch_size, 1))
@@ -112,7 +143,7 @@ def main():
 	x, _ = fetch_openml('mnist_784', return_X_y=True, data_home='data')
 	x = 2 * (x / x.max()) - 1
 	gan = GAN()
-	images = gan.fit(x)
+	images = gan.fit(x.reshape((-1, 1, 28, 28)))
 	for i, img in enumerate(np.array(images).reshape(-1, 784)):
 		plt.subplot(len(images), 10, i + 1)
 		plt.imshow(img.reshape(28, 28), cmap='gray', vmin=-1, vmax=1)

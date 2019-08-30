@@ -1,6 +1,5 @@
 import numpy as np
 # will add dropout
-# del grad after use
 
 
 def img2col_index(x_shape, k_size, stride=1):
@@ -57,6 +56,8 @@ class Layer(object):
 	def backward(self):
 		self.regularize()
 		self.gradient_funcs[self.optimizer]()
+		del self.grad_w
+		del self.grad_b
 
 	def regularize(self):
 		self.w *= (1 - self.weight_decay)
@@ -87,7 +88,8 @@ class Conv(Layer):
 		self.w = np.random.randn(channel*k_size*k_size, k_num) / np.sqrt(channel / 2) / k_size
 		self.b = np.zeros((1, k_num))
 		self.init_momentum_cache()
-
+		assert((height + 2 * padding - k_size) % stride == 0)
+		assert((width + 2 * padding - k_size) % stride == 0)
 		self.out_shape = (k_num, (height + 2 * padding - k_size)//stride+1, (width + 2 * padding - k_size)//stride+1)
 		self.stride, self.padding = stride, padding
 
@@ -101,12 +103,13 @@ class Conv(Layer):
 
 	def gradient(self, grad):
 		batch_size = grad.shape[0]
+		p = self.padding
+		padded_inshape = (self.in_shape[0], self.in_shape[1] + 2 * p, self.in_shape[2] + 2 * p)
 		grad_out = grad.transpose(2,3,0,1).reshape([-1, self.out_shape[0]])
 		self.grad_w = self.input.T.dot(grad_out) / batch_size
 		self.grad_b = np.ones((1, grad_out.shape[0])).dot(grad_out) / batch_size
-		self.input = None
-		grad_padded = col2img(grad_out.dot(self.w.T), self.in_shape, self.k_size, self.stride)
-		p = self.padding
+		del self.input
+		grad_padded = col2img(grad_out.dot(self.w.T), padded_inshape, self.k_size, self.stride)
 		return grad_padded if p == 0 else grad_padded[:, :, p:-p, p:-p]
 
 
@@ -117,22 +120,28 @@ class TrasposedConv(Layer):
 		channel, height, width = in_shape
 		self.k_size = k_size
 		self.w = np.random.randn(channel, k_num*k_size*k_size) / np.sqrt(k_num / 2) / k_size
-		self.b = np.zeros((1, k_num*k_size*k_size))
+		self.b = np.zeros((1, k_num))
 		self.init_momentum_cache()
 
-		self.out_shape = (k_num, stride * (height - 1) + k_size, stride * (width - 1) + k_size)
-		self.stride = stride
+		self.out_shape = (k_num, stride * (height - 1) + k_size - 2 * padding, stride * (width - 1) + k_size - 2 * padding)
+		self.stride, self.padding = stride, padding
 
 	def forward(self, x):
 		self.input = x.transpose(2,3,0,1).reshape([-1, self.in_shape[0]])
-		out_cols = self.input.dot(self.w) + self.b
-		return col2img(out_cols, self.out_shape, self.k_size, self.stride)
+		p = self.padding
+		padded_outshape = (self.out_shape[0], self.out_shape[1] + 2 * p, self.out_shape[2] + 2 * p)
+		out_cols = self.input.dot(self.w)
+		out_padded = col2img(out_cols, padded_outshape, self.k_size, self.stride) + self.b.reshape((1,-1,1,1))
+		return out_padded if p == 0 else out_padded[:, :, p:-p, p:-p]
 
 	def gradient(self, grad):
 		batch_size = grad.shape[0]
-		grad_col = img2col(grad, self.k_size, self.stride)
+		p = self.padding
+		grad_padded = np.pad(grad, ((0, 0), (0, 0), (p, p), (p, p)), 'constant')
+		grad_col = img2col(grad_padded, self.k_size, self.stride)
 		self.grad_w = self.input.T.dot(grad_col) / batch_size
-		self.grad_b = np.ones((1, grad_col.shape[0])).dot(grad_col) / batch_size
+		self.grad_b = grad.sum(axis=(0,2,3)) / batch_size
+		del self.input
 		return grad_col.dot(self.w.T).reshape(self.in_shape[1], self.in_shape[2], batch_size, self.in_shape[0]).transpose(2, 3, 0, 1)
 
 
@@ -163,6 +172,7 @@ class MaxPooling(Layer):
 	def backward(self):
 		pass
 
+
 class Softmax(Layer):
 	def __init__(self):
 		super(Softmax, self).__init__()
@@ -181,6 +191,7 @@ class Softmax(Layer):
 	def backward(self):
 		pass
 
+
 class FullyConnect(Layer):
 	def __init__(self, in_shape, out_shape, lr=1e-3):
 		super(FullyConnect, self).__init__(lr=lr)
@@ -196,10 +207,11 @@ class FullyConnect(Layer):
 
 	def gradient(self, grad):
 		batch_size = grad.shape[0]
-		self.grad_w = self.input.T.dot(grad) / batch_size
-		self.grad_b = np.ones((1, batch_size)).dot(grad) / batch_size
-		self.input = None
-		return grad.dot(self.w.T).reshape([-1] + list(self.in_shape))
+		grad_out = grad.reshape((batch_size, np.prod(self.out_shape)))
+		self.grad_w = self.input.T.dot(grad_out) / batch_size
+		self.grad_b = np.ones((1, batch_size)).dot(grad_out) / batch_size
+		del self.input
+		return grad_out.dot(self.w.T).reshape([-1] + list(self.in_shape))
 
 
 class Activation(Layer):
@@ -243,6 +255,7 @@ class Activation(Layer):
 
 	def backward(self):
 		pass
+
 
 class BatchNormalization(Layer):
 	def __init__(self, in_shape, lr=1e-3):
