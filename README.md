@@ -55,6 +55,7 @@ Implemented algorithms:
             * Sigmoid
         * WIP: Drop out layer
     * Mini Batch
+    * He initialization
     * Loss functions
         * Squared error
         * Cross entropy

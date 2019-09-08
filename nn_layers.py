@@ -258,12 +258,12 @@ class Activation(Layer):
 
 
 class BatchNormalization(Layer):
-	def __init__(self, in_shape, lr=1e-3):
+	def __init__(self, in_shape, lr=1e-3, momentum=0.9):
 		super(BatchNormalization, self).__init__(lr=lr)
 		self.in_shape = in_shape
 		self.param_shape = (1, in_shape[0]) if len(in_shape) == 1 else (1, in_shape[0], 1, 1)
 		self.agg_axis = 0 if len(in_shape) == 1 else (0, 2, 3)  # cnn over channel
-		self.momentum = 0.99
+		self.momentum = momentum
 		self.weight_decay = 0
 		self.w, self.b = np.ones(self.param_shape), np.zeros(self.param_shape)
 		self.init_momentum_cache()
