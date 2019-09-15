@@ -46,8 +46,8 @@ class GAN(object):
 	def __init__(self):
 		self.n_epochs, self.batch_size = 5, 32
 		self.gen_input = 100
-		self.vanilla_gan()
-		
+		self.dc_gan()
+
 	def vanilla_gan(self):
 		gen_lr, dis_lr = 2e-3, 5e-4
 		self.generator = NN([
@@ -67,17 +67,15 @@ class GAN(object):
 			FullyConnect([1,28,28], [1024], lr=dis_lr),
 			Activation(act_type='LeakyReLU'),
 			FullyConnect([1024], [512], lr=dis_lr),
-			# BatchNormalization([512], lr=dis_lr, momentum=0.5),
 			Activation(act_type='LeakyReLU'),
 			FullyConnect([512], [256], lr=dis_lr),
-			# BatchNormalization([256], lr=dis_lr, momentum=0.5),
 			Activation(act_type='LeakyReLU'),
 			FullyConnect([256], [1], lr=dis_lr),
 			Activation(act_type='Sigmoid')
 		])
 
 	def dc_gan(self):
-		gen_lr, dis_lr = 2e-3, 2e-4
+		gen_lr, dis_lr = 2e-3, 5e-4
 		tconv1 = TrasposedConv((128, 7, 7), k_size=4, k_num=128, stride=2, padding=1, lr=gen_lr)
 		tconv2 = TrasposedConv(tconv1.out_shape, k_size=4, k_num=128, stride=2, padding=1, lr=gen_lr)
 		tconv3 = TrasposedConv(tconv2.out_shape, k_size=7, k_num=1, stride=1, padding=3, lr=gen_lr)
@@ -92,6 +90,7 @@ class GAN(object):
 			BatchNormalization(tconv2.out_shape, lr=gen_lr),
 			Activation(act_type='ReLU'),
 			tconv3,
+			BatchNormalization(tconv3.out_shape, lr=gen_lr),
 			Activation(act_type='Tanh')
 		])
 		conv1 = Conv((1, 28, 28), k_size=7, k_num=128, stride=1, padding=3, lr=dis_lr)
@@ -101,8 +100,10 @@ class GAN(object):
 			conv1,
 			Activation(act_type='LeakyReLU'),
 			conv2,
+			BatchNormalization(conv2.out_shape, lr=dis_lr),
 			Activation(act_type='LeakyReLU'),
 			conv3,
+			BatchNormalization(conv3.out_shape, lr=dis_lr),
 			Activation(act_type='LeakyReLU'),
 			FullyConnect(conv3.out_shape, [1], lr=dis_lr),
 			Activation(act_type='Sigmoid')
