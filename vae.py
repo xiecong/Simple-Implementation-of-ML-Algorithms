@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 class VAE(object):
 	def __init__(self, dim_in, dim_hidden, dim_z):
 		self.n_epochs, self.batch_size = 10, 32
-		self.C = 0.5  # trade off of reconstruction and KL divergence
+		self.C = 1  # trade off of reconstruction and KL divergence
 
 		# architecture is hard-coded
 		self.encoder_hidden = FullyConnect([dim_in], [dim_hidden], lr=1e-2)
@@ -45,6 +45,9 @@ class VAE(object):
 				grad_e_hidden = self.encoder_hidden.gradient(grad_e_act)
 
 				self.backward()
+			print('epoch: {}, log loss: {}, kl loss: {}'.format(
+				epoch, self.log_loss(out, x_batch), self.kl_loss(mu, log_sigma)
+			))
 
 	def encoder_forward(self, x):
 		hidden = self.encoder_hidden.forward(x)
@@ -74,19 +77,25 @@ class VAE(object):
 		self.encoder_act.backward()
 		self.encoder_hidden.backward()
 
+	def log_loss(self, pred, x):
+		return 0.5 * self.C  * np.square(pred - x).mean()
+
+	def kl_loss(self, mu, log_sigma):
+		return 0.5 * (-2 * log_sigma + np.exp(2 * log_sigma) + np.square(mu) - 1).mean()
+
 def main():
 	#data = load_digits()
 	#x, y = data.data, data.target
 	x, _ = fetch_openml('mnist_784', return_X_y=True, data_home="data")
-	vae = VAE(x.shape[1], 32, 2)
+	vae = VAE(x.shape[1], 64, 2)
 	vae.fit(x / x.max())
 
-	n_rows = 10
+	n_rows = 11
 	for i in range(n_rows):
 		for j in range(n_rows):
 			plt.subplot(n_rows, n_rows, i * n_rows + j + 1)
 			plt.imshow(
-				vae.decoder_forward(np.array([[(i - n_rows / 2), (j - n_rows / 2)]])).reshape(28, 28),
+				vae.decoder_forward(np.array([[(i - n_rows // 2) / 2, (j - n_rows // 2) / 2]])).reshape(28, 28),
 				cmap='gray', vmin=0, vmax=1
 			)
 	plt.show()
