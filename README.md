@@ -68,11 +68,12 @@ Implemented algorithms:
     * Multilayer Perceptron
     * Restricted Boltzman Machine
     * Deep Belief Network
+    * Variational autoencoder (VAE)
     * Convolutional Neural Network
         * Convolutional layer with vectorized img2col and col2img
     * Recurrent neural network
         * Backpropagation through time (BPTT)
-    * Generative Adversarial Networks
+    * Generative Adversarial Networks (GAN)
 
 * Optimization Algorithms (See implementations in MLP or Regression)
 	* Stochastic Gradient Descent
@@ -101,7 +102,6 @@ Implemented algorithms:
 
 Work in progress:
 * Long short-term memory
-* Variational autoencoder (VAE)
 * Deep Q-Network (Reinforcement learning)
 
 Feel free to use the code. Please contact me if you have any question: xiecng [at] gmail.com
