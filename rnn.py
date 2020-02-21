@@ -30,7 +30,7 @@ class RNN(object):
 		self.act_func, self.dact_func = tanh, dtanh
 		self.loss = cross_entropy
 		self.n_hidden, self.n_label = n_hidden, n_label
-		self.lr, self.batch_size, self.epochs = 0.5, 32, 200
+		self.lr, self.batch_size, self.epochs = 1, 32, 200
 		self.eps = 1e-20
 		self.n_t = n_t
 		self.u = np.random.randn(n_input, self.n_hidden) / n_input
@@ -62,8 +62,8 @@ class RNN(object):
 
 				for t in range(n_t):
 					t_idx = np.arange(t * b_size, (t + 1) * b_size)
-					t_idx_1 = t_idx - b_size if t > 0 else t_idx
-					h[t_idx] = self.act_func(x_batch[t_idx].dot(self.u) + h[t_idx_1].dot(self.w) + self.b)
+					t_idx_prev = t_idx - b_size if t > 0 else t_idx
+					h[t_idx] = self.act_func(x_batch[t_idx].dot(self.u) + h[t_idx_prev].dot(self.w) + self.b)
 
 				grad_pred = softmax(h.dot(self.v) + self.c) - y_batch
 
@@ -99,8 +99,8 @@ class RNN(object):
 
 		for t in range(n_t):
 			t_idx = np.arange(t * n_data, (t + 1) * n_data)
-			t_idx_1 = t_idx - n_data if t > 0 else t_idx
-			h[t_idx] = self.act_func(x_batch[t_idx].dot(self.u) + h[t_idx_1].dot(self.w) + self.b)
+			t_idx_prev = t_idx - n_data if t > 0 else t_idx
+			h[t_idx] = self.act_func(x_batch[t_idx].dot(self.u) + h[t_idx_prev].dot(self.w) + self.b)
 		grad_pred = softmax(h.dot(self.v) + self.c) - y
 		grad_h = grad_pred.dot(self.v.T)
 		for t in reversed(range(1, n_t)):
@@ -126,9 +126,9 @@ class RNN(object):
 			h_1, h_2 = np.zeros((n_t * n_data, self.n_hidden)), np.zeros((n_t * n_data, self.n_hidden))
 			for t in range(n_t):
 				t_idx = np.arange(t * n_data, (t + 1) * n_data)
-				t_idx_1 = t_idx - n_data if t > 0 else t_idx
-				h_1[t_idx] = self.act_func(x_batch[t_idx].dot(params[0]) + h_1[t_idx_1].dot(params[4]) + params[6])
-				h_2[t_idx] = self.act_func(x_batch[t_idx].dot(params[1]) + h_2[t_idx_1].dot(params[5]) + params[7])
+				t_idx_prev = t_idx - n_data if t > 0 else t_idx
+				h_1[t_idx] = self.act_func(x_batch[t_idx].dot(params[0]) + h_1[t_idx_prev].dot(params[4]) + params[6])
+				h_2[t_idx] = self.act_func(x_batch[t_idx].dot(params[1]) + h_2[t_idx_prev].dot(params[5]) + params[7])
 			pred_1 = cross_entropy(softmax(h_1.dot(params[2]) + params[8]), y)
 			pred_2 = cross_entropy(softmax(h_2.dot(params[3]) + params[9]), y)
 			print('gradient_check', ((pred_1 - pred_2) / eps / 2 - grad)/eps/eps)
@@ -148,8 +148,8 @@ class RNN(object):
 			[self.mom_u, self.mom_w, self.mom_b, self.mom_v, self.mom_c],
 			[self.cache_u, self.cache_w, self.cache_b, self.cache_v, self.cache_c]
 		):
-			mom = beta1 * mom + (1 - beta1) * grads
-			cache = beta2 * cache + (1 - beta2) * np.square(grads)
+			mom += (beta1 - 1) * mom + (1 - beta1) * grads
+			cache += (beta2 - 1) * cache + (1 - beta2) * np.square(grads)
 			params -= alpha * mom / (np.sqrt(cache) + self.eps)
 
 	def regularization(self):
@@ -162,8 +162,8 @@ class RNN(object):
 		h = np.zeros((n_t * n_data, self.n_hidden))
 		for t in range(n_t):
 			t_idx = np.arange(t * n_data, (t + 1) * n_data)
-			t_idx_1 = t_idx - n_data if t > 0 else t_idx
-			h[t_idx] = self.act_func(x[t].dot(self.u) + h[t_idx_1].dot(self.w) + self.b)
+			t_idx_prev = t_idx - n_data if t > 0 else t_idx
+			h[t_idx] = self.act_func(x[t].dot(self.u) + h[t_idx_prev].dot(self.w) + self.b)
 		return softmax(h.dot(self.v) + self.c).reshape(n_t, n_data, self.n_label)
 
 	def sample(self, x_idx, h, seq_length):
@@ -196,6 +196,7 @@ def binary_add_test():
 	print('train loss', (np.argmax(rnn.predict(train_x), axis=2)==train_y).sum()/(train_y.shape[0] * train_y.shape[1]))
 	print('test loss', (np.argmax(rnn.predict(test_x), axis=2)==test_y).sum()/(test_y.shape[0] * test_y.shape[1]))
 
+
 def text_generation(use_word=True):
 	text = requests.get('http://www.gutenberg.org/cache/epub/11/pg11.txt').text
 	if use_word:
@@ -223,14 +224,16 @@ def text_generation(use_word=True):
 
 	rnn = RNN(vocab_size, 500, vocab_size, seq_length)
 	rnn.ix_to_word = ix_to_word
-	rnn.fit(train_x, train_y)
 	# rnn.gradient_check(train_x[:,np.arange(32),:], train_y[:,np.arange(32)])
+	rnn.fit(train_x, train_y)
 	print('train loss', (np.argmax(rnn.predict(train_x), axis=2)==train_y).sum()/(train_y.shape[0] * train_y.shape[1]))
 	print('test loss', (np.argmax(rnn.predict(test_x), axis=2)==test_y).sum()/(test_y.shape[0] * test_y.shape[1]))
 
+
 def main():
-	text_generation(use_word=False)
-	# binary_add_test()
+	# text_generation(use_word=False)
+	binary_add_test()
+
 
 if __name__ == "__main__":
 	main()

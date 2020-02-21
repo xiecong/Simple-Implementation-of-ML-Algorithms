@@ -73,6 +73,7 @@ Implemented algorithms:
         * Convolutional layer with vectorized img2col and col2img
     * Recurrent neural network
         * Backpropagation through time (BPTT)
+    * Long short-term memory
     * Generative Adversarial Networks (GAN)
 
 * Optimization Algorithms (See implementations in MLP or Regression)
@@ -101,7 +102,6 @@ Implemented algorithms:
     * Prediction by Viterbi
 
 Work in progress:
-* Long short-term memory
 * Deep Q-Network (Reinforcement learning)
 
 Feel free to use the code. Please contact me if you have any question: xiecng [at] gmail.com
