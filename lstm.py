@@ -1,7 +1,6 @@
 import numpy as np
 import requests
 import re
-# TODO add sentence tokenizer
 
 
 def sigmoid(x):
@@ -88,16 +87,14 @@ class LSTM(object):
 
 				for t in reversed(range(0, n_t)):
 					t_idx = np.arange(t * b_size, (t + 1) * b_size)
-					if t < n_t - 1:
-						grad_h[t_idx] += (
-							dsigmoid(grad_f[t_idx + b_size], f[t_idx + b_size]) @ self.u_f.T +
-							dsigmoid(grad_i[t_idx + b_size], i[t_idx + b_size]) @ self.u_i.T +
-							dsigmoid(grad_o[t_idx + b_size], o[t_idx + b_size]) @ self.u_o.T +
-							dtanh(grad_c_bar[t_idx + b_size], c_bar[t_idx + b_size]) @ self.u_c.T
-						)
-					grad_c[t_idx] = o[t_idx] * grad_h[t_idx] * (1 - np.square(np.tanh(c[t_idx])))
-					if t < n_t - 1:
-						grad_c[t_idx] += f[t_idx + b_size] * grad_c[t_idx + b_size]
+					t_idx_next = t_idx + b_size if t < n_t - 1 else t_idx
+					grad_h[t_idx] += (
+						dsigmoid(grad_f[t_idx_next], f[t_idx_next]) @ self.u_f.T +
+						dsigmoid(grad_i[t_idx_next], i[t_idx_next]) @ self.u_i.T +
+						dsigmoid(grad_o[t_idx_next], o[t_idx_next]) @ self.u_o.T +
+						dtanh(grad_c_bar[t_idx_next], c_bar[t_idx_next]) @ self.u_c.T
+					)
+					grad_c[t_idx] = o[t_idx] * grad_h[t_idx] * (1 - np.square(np.tanh(c[t_idx]))) + f[t_idx_next] * grad_c[t_idx_next]
 					grad_f[t_idx] = grad_c[t_idx] * c_prev[t_idx]
 					grad_i[t_idx] = grad_c[t_idx] * c_bar[t_idx]
 					grad_o[t_idx] = grad_h[t_idx] * tanh(c[t_idx])
@@ -149,16 +146,14 @@ class LSTM(object):
 
 		for t in reversed(range(0, n_t)):
 			t_idx = np.arange(t * n_data, (t + 1) * n_data)
-			if t < n_t - 1:
-				grad_h[t_idx] += (
-					dsigmoid(grad_f[t_idx + n_data], f[t_idx + n_data]) @ self.u_f.T +
-					dsigmoid(grad_i[t_idx + n_data], i[t_idx + n_data]) @ self.u_i.T +
-					dsigmoid(grad_o[t_idx + n_data], o[t_idx + n_data]) @ self.u_o.T +
-					dtanh(grad_c_bar[t_idx + n_data], c_bar[t_idx + n_data]) @ self.u_c.T
-				)
-			grad_c[t_idx] = o[t_idx] * grad_h[t_idx] * (1 - np.square(np.tanh(c[t_idx])))
-			if t < n_t - 1:
-				grad_c[t_idx] += f[t_idx + n_data] * grad_c[t_idx + n_data]
+			t_idx_next = t_idx + n_data if t < n_t - 1 else t_idx
+			grad_h[t_idx] += (
+				dsigmoid(grad_f[t_idx_next], f[t_idx_next]) @ self.u_f.T +
+				dsigmoid(grad_i[t_idx_next], i[t_idx_next]) @ self.u_i.T +
+				dsigmoid(grad_o[t_idx_next], o[t_idx_next]) @ self.u_o.T +
+				dtanh(grad_c_bar[t_idx_next], c_bar[t_idx_next]) @ self.u_c.T
+			)
+			grad_c[t_idx] = o[t_idx] * grad_h[t_idx] * (1 - np.square(np.tanh(c[t_idx]))) + f[t_idx_next] * grad_c[t_idx_next]
 			grad_f[t_idx] = grad_c[t_idx] * c_prev[t_idx]
 			grad_i[t_idx] = grad_c[t_idx] * c_bar[t_idx]
 			grad_o[t_idx] = grad_h[t_idx] * tanh(c[t_idx])
@@ -171,39 +166,30 @@ class LSTM(object):
 			h_prev.T @ dsigmoid(grad_f, f), h_prev.T @ dsigmoid(grad_i, i), h_prev.T @ dtanh(grad_c_bar, c_bar), h_prev.T @ dsigmoid(grad_o, o), h.T @ grad_v,
 			constant @ dsigmoid(grad_f, f), constant @ dsigmoid(grad_i, i), constant @ dtanh(grad_c_bar, c_bar), constant @ dsigmoid(grad_o, o), constant @ grad_v
 		]):
-			params_a = [param.copy() for param in self.param_list]
-			params_b = [param.copy() for param in self.param_list]
-			params_a[j][index]+=eps
-			params_b[j][index]-=eps
+			preds = [0, 0]
+			for sign in [+1, -1]:
+				params = [param.copy() for param in self.param_list]
+				params[j][index] += sign * eps
 
-			w_f_a, w_i_a, w_c_a, w_o_a, u_f_a, u_i_a, u_c_a, u_o_a, u_v_a, b_f_a, b_i_a, b_c_a, b_o_a, b_v_a = params_a
-			w_f_b, w_i_b, w_c_b, w_o_b, u_f_b, u_i_b, u_c_b, u_o_b, u_v_b, b_f_b, b_i_b, b_c_b, b_o_b, b_v_b = params_b
-			h_a, f_a, i_a, c_a, o_a, c_bar_a, h_b, f_b, i_b, c_b, o_b, c_bar_b = [
-				np.zeros((n_t * n_data, self.n_hidden)) for _ in range(12)
-			]
+				w_f_a, w_i_a, w_c_a, w_o_a, u_f_a, u_i_a, u_c_a, u_o_a, u_v_a, b_f_a, b_i_a, b_c_a, b_o_a, b_v_a = params
+				h_a, f_a, i_a, c_a, o_a, c_bar_a = [
+					np.zeros((n_t * n_data, self.n_hidden)) for _ in range(6)
+				]
 
-			for t in range(n_t):
-				t_idx = np.arange(t * n_data, (t + 1) * n_data)
-				t_idx_prev = t_idx - n_data if t > 0 else t_idx
+				for t in range(n_t):
+					t_idx = np.arange(t * n_data, (t + 1) * n_data)
+					t_idx_prev = t_idx - n_data if t > 0 else t_idx
 
-				xt_batch, ht_prev_a, ht_prev_b = x_batch[t_idx], h_a[t_idx_prev], h_b[t_idx_prev]
-				f_a[t_idx] = sigmoid(xt_batch @ w_f_a + ht_prev_a @ u_f_a + b_f_a)
-				i_a[t_idx] = sigmoid(xt_batch @ w_i_a + ht_prev_a @ u_i_a + b_i_a)
-				o_a[t_idx] = sigmoid(xt_batch @ w_o_a + ht_prev_a @ u_o_a + b_o_a)
-				c_bar_a[t_idx] = tanh(xt_batch @ w_c_a + ht_prev_a @ u_c_a + b_c_a)
-				c_a[t_idx] = f_a[t_idx] * c_a[t_idx_prev] + i_a[t_idx] * c_bar_a[t_idx]
-				h_a[t_idx] = o_a[t_idx] * tanh(c_a[t_idx])
+					xt_batch, ht_prev_a = x_batch[t_idx], h_a[t_idx_prev]
+					f_a[t_idx] = sigmoid(xt_batch @ w_f_a + ht_prev_a @ u_f_a + b_f_a)
+					i_a[t_idx] = sigmoid(xt_batch @ w_i_a + ht_prev_a @ u_i_a + b_i_a)
+					o_a[t_idx] = sigmoid(xt_batch @ w_o_a + ht_prev_a @ u_o_a + b_o_a)
+					c_bar_a[t_idx] = tanh(xt_batch @ w_c_a + ht_prev_a @ u_c_a + b_c_a)
+					c_a[t_idx] = f_a[t_idx] * c_a[t_idx_prev] + i_a[t_idx] * c_bar_a[t_idx]
+					h_a[t_idx] = o_a[t_idx] * tanh(c_a[t_idx])
 
-				f_b[t_idx] = sigmoid(xt_batch @ w_f_b + ht_prev_b @ u_f_b + b_f_b)
-				i_b[t_idx] = sigmoid(xt_batch @ w_i_b + ht_prev_b @ u_i_b + b_i_b)
-				o_b[t_idx] = sigmoid(xt_batch @ w_o_b + ht_prev_b @ u_o_b + b_o_b)
-				c_bar_b[t_idx] = tanh(xt_batch @ w_c_b + ht_prev_b @ u_c_b + b_c_b)
-				c_b[t_idx] = f_b[t_idx] * c_b[t_idx_prev] + i_b[t_idx] * c_bar_b[t_idx]
-				h_b[t_idx] = o_b[t_idx] * tanh(c_b[t_idx])
-
-			pred_a = cross_entropy(softmax(h_a @ u_v_a + b_v_a), y)
-			pred_b = cross_entropy(softmax(h_b @ u_v_b + b_v_b), y)
-			print('gradient_check', j, ((pred_a - pred_b) / eps / 2 - grad[index])/eps/eps)
+				preds[(sign + 1) // 2] = cross_entropy(softmax(h_a @ u_v_a + b_v_a), y)
+			print('gradient_check', j, ((preds[1] - preds[0]) / eps / 2 - grad[index])/eps/eps)
 
 
 	def sgd(self, grad_list):
@@ -270,7 +256,7 @@ def text_generation(use_word=True):
 	word_to_ix = {word:i for i, word in enumerate(words)}
 	ix_to_word = {i:word for i, word in enumerate(words)}
 
-	seq_length = 25
+	seq_length = 50
 	indices = np.vectorize(word_to_ix.get)(np.array(list(text)))
 	data = np.zeros((text_size, vocab_size))
 	data[np.arange(text_size), indices] = 1
