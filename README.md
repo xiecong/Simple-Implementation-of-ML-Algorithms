@@ -10,9 +10,11 @@ Also see decision boundary visualization for implemented classifiers in decision
 Implemented algorithms:
 
 * Regression Models
-    * Ridge Regression
+    * Linear Regression
         * Matrix solver
         * SGD/Adam solver
+        * L1 regularization Lasso
+        * L2 regularization Ridge
     * Logistic Regression
         * Multi-class prediction
     * Factorization Machines

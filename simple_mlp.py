@@ -1,13 +1,14 @@
 import numpy as np
 from sklearn.datasets import load_digits
-## a simpler implementation of multilayer perceptron with backpropagation training
-## 2 hidden layers, with 100 and 50 perceptrons
-## this one use sigmoid in hiddn layer and softmax in output
-## set batch size and epochs before start
+# a simpler implementation of multilayer perceptron with backpropagation training
+# 2 hidden layers, with 100 and 50 perceptrons
+# this one use sigmoid in hiddn layer and softmax in output
+# set batch size and epochs before start
 
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
+
 
 def softmax(x):
     eps = 1e-8
@@ -16,6 +17,7 @@ def softmax(x):
 
 
 class MLP(object):
+
     def __init__(self, n_features, n_labels):
         '''
         D_in is input dimension;
@@ -34,7 +36,7 @@ class MLP(object):
         self.b1 = np.random.randn(1, self.H1)
         self.b2 = np.random.randn(1, self.H2)
         self.b3 = np.random.randn(1, self.D_out)
-    
+
     def loss(self, x, y):
         return -(np.multiply(y, np.log(self.predict(x)))).mean()
 
@@ -48,16 +50,17 @@ class MLP(object):
         train_num = x_train.shape[0]
         eps = 1e-8
         bvec = np.ones((1, self.batch_size))
-        
+
         y_train = np.zeros((train_num, self.D_out))
         y_train[np.arange(train_num), labels] = 1
 
         for epoch in range(self.epochs):
-            #mini batch
-            permut=np.random.permutation(train_num//self.batch_size*self.batch_size).reshape(-1,self.batch_size)
+            # mini batch
+            permut = np.random.permutation(
+                train_num // self.batch_size * self.batch_size).reshape(-1, self.batch_size)
             for b_idx in range(permut.shape[0]):
-                x, y = x_train[permut[b_idx,:]], y_train[permut[b_idx,:]]
-                
+                x, y = x_train[permut[b_idx, :]], y_train[permut[b_idx, :]]
+
                 # Forward pass: compute predicted y
                 a1 = sigmoid(x.dot(self.w1) + self.b1)
                 a2 = sigmoid(a1.dot(self.w2) + self.b2)
@@ -82,7 +85,8 @@ class MLP(object):
                 self.b2 -= self.learning_rate * bvec.dot(grad_a2)
                 self.w3 -= self.learning_rate * grad_w3
                 self.b3 -= self.learning_rate * bvec.dot(grad_out)
-            print('epoch {}, loss: {}'.format(epoch, self.loss(x_train, y_train)))
+            print('epoch {}, loss: {}'.format(
+                epoch, self.loss(x_train, y_train)))
 
 
 def main():
@@ -94,10 +98,12 @@ def main():
     train_y = data.target[test_split >= test_ratio]
     test_y = data.target[test_split < test_ratio]
 
-    mlp = MLP(train_x.shape[1], len(np.unique(data.target)) )
+    mlp = MLP(train_x.shape[1], len(np.unique(data.target)))
     mlp.fit(train_x, train_y)
-    print(sum(np.argmax(mlp.predict(train_x), axis=1) == train_y)/train_y.shape[0])
-    print(sum(np.argmax(mlp.predict(test_x), axis=1) == test_y)/test_y.shape[0])
+    print(sum(np.argmax(mlp.predict(train_x), axis=1)
+              == train_y) / train_y.shape[0])
+    print(sum(np.argmax(mlp.predict(test_x), axis=1)
+              == test_y) / test_y.shape[0])
 
 
 if __name__ == "__main__":
