@@ -1,8 +1,8 @@
 import numpy as np
-from nn_layers import FullyConnect, Activation
+from nn_layers import FullyConnect, Activation, Conv
 # Double deep q learning (DQN) for Tic Tac Toe
-n_size = 3
-n_connect = 3
+n_size = 5
+n_connect = 4
 
 
 def is_done(board):
@@ -69,32 +69,38 @@ class NN(object):
 class DQN(object):
 
     def __init__(self, eps=1):
-        self.n_episodes = 5000
+        self.n_episodes = 1000
         self.batch_size = 32
-        self.n_epochs = 1000
+        self.n_epochs = 300
         self.gamma = 0.9
         self.eps = eps
-        self.eps_decay = 0.9995
+        self.eps_decay = 0.999
         lr = 1e-5
         self.policy_net = NN([
-            FullyConnect([2, n_size * n_size], [32],
+            Conv((2, n_size, n_size), k_size=n_connect,
+                 k_num=128, optimizer='RMSProp'),
+            Activation(act_type='ReLU'),
+            FullyConnect([128, n_size - n_connect + 1, n_size - n_connect + 1], [32],
                          lr=lr, optimizer='RMSProp'),
             Activation(act_type='ReLU'),
-            FullyConnect([32], [32], lr=lr, optimizer='RMSProp'),
+            FullyConnect([32], [16], lr=lr, optimizer='RMSProp'),
             Activation(act_type='ReLU'),
-            FullyConnect([32], [n_size * n_size], lr=lr, optimizer='RMSProp'),
+            FullyConnect([16], [n_size * n_size], lr=lr, optimizer='RMSProp'),
         ])
         self.target_net = NN([
-            FullyConnect([2, n_size * n_size], [32],
+            Conv((2, n_size, n_size), k_size=n_connect,
+                 k_num=128, optimizer='RMSProp'),
+            Activation(act_type='ReLU'),
+            FullyConnect([128, n_size - n_connect + 1, n_size - n_connect + 1], [32],
                          lr=lr, optimizer='RMSProp'),
             Activation(act_type='ReLU'),
-            FullyConnect([32], [32], lr=lr, optimizer='RMSProp'),
+            FullyConnect([32], [16], lr=lr, optimizer='RMSProp'),
             Activation(act_type='ReLU'),
-            FullyConnect([32], [n_size * n_size], lr=lr, optimizer='RMSProp'),
+            FullyConnect([16], [n_size * n_size], lr=lr, optimizer='RMSProp'),
         ])
 
-        self.states = np.zeros((0, 2, n_size * n_size))
-        self.next_states = np.zeros((0, 2, n_size * n_size))
+        self.states = np.zeros((0, 2, n_size, n_size))
+        self.next_states = np.zeros((0, 2, n_size, n_size))
         self.actions = np.zeros(0).astype(int)
         self.rewards = np.zeros(0)
         self.unfinish_mask = np.zeros(0)
@@ -123,7 +129,8 @@ class DQN(object):
         print('loss', loss / self.n_epochs)
 
     def eps_greedy(self, state):
-        valid_mask = 1 - state[0, 0, :] - state[0, 1, :]
+        valid_mask = 1 - state[0, 0, :, :].flatten() - \
+            state[0, 1, :, :].flatten()
         preds = self.policy_net.forward(state)[0]
         max_idx = np.argmax(preds * valid_mask -
                             (1 - valid_mask) * np.finfo(float).max)
@@ -145,16 +152,16 @@ class DQN(object):
                 player = move % 2 * 2 - 1
                 for board in boards:
                     self.states = np.append(self.states, np.array(
-                        [[board == player, board == -player]]), axis=0)[-training_size:]
+                        [[(board == player).reshape(n_size, n_size), (board == -player).reshape(n_size, n_size)]]), axis=0)[-training_size:]
                 action_pos = self.eps_greedy(
-                    np.array([[boards[0] == player, boards[0] == -player]]))
-                action_list = self.transform_action(action_pos)
+                    np.array([[(boards[0] == player).reshape(n_size, n_size), (boards[0] == -player).reshape(n_size, n_size)]]))
+                action_list = transform_action(action_pos)
                 boards[range(8), action_list] = player
                 for action, board in zip(action_list, boards):
                     self.actions = np.append(
                         self.actions, action)[-training_size:]
                     self.next_states = np.append(self.next_states, np.array(
-                        [[board == player, board == -player]]), axis=0)[-training_size:]
+                        [[(board == player).reshape(n_size, n_size), (board == -player).reshape(n_size, n_size)]]), axis=0)[-training_size:]
                 winner = is_done(boards[0].reshape((n_size, n_size)))
                 if abs(winner) == 1:
                     break
@@ -192,7 +199,7 @@ def test_against_random(dqn):
             player = move % 2 * 2 - 1
             if((int(iteration >= 500) + move) % 2 == 0):
                 action_pos = dqn.eps_greedy(
-                    np.array([[board == player, board == -player]]))
+                    np.array([[(board == player).reshape(n_size, n_size), (board == -player).reshape(n_size, n_size)]]))
             else:
                 action_pos = np.random.choice(
                     n_size * n_size, 1, p=(1 - np.abs(board)) / (1 - abs(board)).sum())[0]

@@ -99,8 +99,8 @@ class Layer(object):
 
 class Conv(Layer):
 
-    def __init__(self, in_shape, k_size, k_num, stride=1, padding=0, lr=1e-3):
-        super(Conv, self).__init__(lr=lr)
+    def __init__(self, in_shape, k_size, k_num, stride=1, padding=0, lr=1e-3, optimizer="Adam"):
+        super(Conv, self).__init__(lr=lr, optimizer=optimizer)
         self.in_shape = in_shape
         channel, height, width = in_shape
         self.k_size = k_size
