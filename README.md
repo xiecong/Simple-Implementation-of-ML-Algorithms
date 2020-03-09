@@ -44,7 +44,19 @@ Implemented algorithms:
         * XGBoost Regression Tree
         * Shrinkage
 
-* Deep Learning Techniques
+* Deep Learning
+    * Architecture
+        * Multilayer Perceptron
+        * Restricted Boltzman Machine
+        * Deep Belief Network
+        * Variational autoencoder (VAE)
+        * Convolutional Neural Network
+            * Convolutional layer with vectorized img2col and col2img
+        * Recurrent neural network
+            * Backpropagation through time (BPTT)
+        * Long short-term memory
+        * Generative Adversarial Networks (GAN)
+        * Deep Q-Network (Reinforcement learning)
     * Layers
         * Feedforward layer (dense)
         * Convolutional layer
@@ -52,33 +64,21 @@ Implemented algorithms:
         * Batch normalization layer
         * Softmax layer for classification
         * Activation layer
-            * ReLU
-            * Tanh
+            * ReLU (Leaky)
+            * Tanh (Leaky)
             * Sigmoid
         * WIP: Drop out layer
-    * Mini Batch
-    * He initialization
-    * Loss functions
-        * Squared error
-        * Cross entropy
-    * Regularization
-        * L1
-        * L2
-    * Gradient check
+    * Training
+        * Mini Batch
+        * He initialization
+        * Loss functions
+            * Mean squared error for regression
+            * Cross entropy for classification
+            * Log loss for classification
+        * L1/L2 Regularization
+        * Gradient check
 
-* Deep Learning Architecture
-    * Multilayer Perceptron
-    * Restricted Boltzman Machine
-    * Deep Belief Network
-    * Variational autoencoder (VAE)
-    * Convolutional Neural Network
-        * Convolutional layer with vectorized img2col and col2img
-    * Recurrent neural network
-        * Backpropagation through time (BPTT)
-    * Long short-term memory
-    * Generative Adversarial Networks (GAN)
-
-* Optimization Algorithms (See implementations in MLP or Regression)
+* Optimization Algorithms (See implementations in MLP)
 	* Stochastic Gradient Descent
 	* Gradient Descent with Momentum
 	* Nesterov Momentum
@@ -103,7 +103,7 @@ Implemented algorithms:
     * Fitting by Baum-Welch
     * Prediction by Viterbi
 
-Work in progress:
-* Deep Q-Network (Reinforcement learning)
+* WIP
+    * add results in this readme
 
 Feel free to use the code. Please contact me if you have any question: xiecng [at] gmail.com

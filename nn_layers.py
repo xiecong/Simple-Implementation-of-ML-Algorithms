@@ -41,8 +41,9 @@ def col2img(col, in_shape, k_size, stride):
 
 class Layer(object):
 
-    def __init__(self, lr=1e-3, optimizer='Adam'):
-        self.gradient_funcs = {'Adam': self.adam, "SGD": self.sgd}
+    def __init__(self, lr=1e-3, optimizer="Adam"):
+        self.gradient_funcs = {"Adam": self.adam,
+                               "SGD": self.sgd, "RMSProp": self.rmsprop}
         self.learning_rate = lr
         self.weight_decay = 1e-4
         self.eps = 1e-20
@@ -80,6 +81,16 @@ class Layer(object):
         self.cache_b = beta2 * self.cache_b + \
             (1 - beta2) * np.square(self.grad_b)
         self.b -= alpha * self.mom_b / (np.sqrt(self.cache_b) + self.eps)
+
+    def rmsprop(self):
+        gamma = 0.9
+        alpha = self.learning_rate
+        self.cache_w = gamma * self.cache_w + \
+            (1 - gamma) * np.square(self.grad_w)
+        self.w -= alpha * self.grad_w / (np.sqrt(self.cache_w) + self.eps)
+        self.cache_b = gamma * self.cache_b + \
+            (1 - gamma) * np.square(self.grad_b)
+        self.b -= alpha * self.grad_b / (np.sqrt(self.cache_b) + self.eps)
 
     def sgd(self):
         self.w -= self.learning_rate * self.grad_w
@@ -220,8 +231,8 @@ class Softmax(Layer):
 
 class FullyConnect(Layer):
 
-    def __init__(self, in_shape, out_shape, lr=1e-3):
-        super(FullyConnect, self).__init__(lr=lr)
+    def __init__(self, in_shape, out_shape, lr=1e-3, optimizer="Adam"):
+        super(FullyConnect, self).__init__(lr=lr, optimizer=optimizer)
         self.in_shape, self.out_shape = in_shape, out_shape
         in_dim, out_dim = np.prod(in_shape), np.prod(out_shape)
         self.w = np.random.randn(in_dim, out_dim) / np.sqrt(in_dim / 2)
