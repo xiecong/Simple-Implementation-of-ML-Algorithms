@@ -2,7 +2,9 @@ import numpy as np
 import requests
 import re
 # TODO add sentence tokenizer
-
+# implements letter-based sentense generation
+# example output from a model trained with Alice's Adventures in Wonderland is like
+# "jome to a gorking,' Anntaying that o Junn a tell you like the bitious again, you by youed :unnoby i"
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -102,55 +104,6 @@ class RNN(object):
                                   np.random.randn(1, self.n_hidden), n_t * 4))
             print(self.loss(self.predict(x).reshape(n_t * n_data,
                                                     self.n_label), y.reshape(n_t * n_data, self.n_label)))
-
-    def gradient_check(self, x, label):
-        n_t, n_data, n_input = x.shape
-        y = np.zeros((n_t * n_data, self.n_label))
-        y[np.arange(n_t * n_data), label.flatten()] = 1
-        x_batch = x.reshape(n_t * n_data, n_input)
-        h = np.zeros((n_t * n_data, self.n_hidden))
-
-        for t in range(n_t):
-            t_idx = np.arange(t * n_data, (t + 1) * n_data)
-            t_idx_prev = t_idx - n_data if t > 0 else t_idx
-            h[t_idx] = self.act_func(x_batch[t_idx].dot(
-                self.u) + h[t_idx_prev].dot(self.w) + self.b)
-        grad_pred = softmax(h.dot(self.v) + self.c) - y
-        grad_h = grad_pred.dot(self.v.T)
-        for t in reversed(range(1, n_t)):
-            t_idx = np.arange(t * n_data, (t + 1) * n_data)
-            grad_h[
-                t_idx - n_data] += self.dact_func(grad_h[t_idx], h[t_idx]).dot(self.w.T)
-        grad_o = self.dact_func(grad_h, h)
-
-        index = (0, 1)
-        dw = h[:-n_data].T.dot(grad_o[n_data:])[index]
-        du = x_batch.T.dot(grad_o)[index]
-        db = np.ones((1, n_data * n_t)).dot(grad_o)[index]
-        dv = h.T.dot(grad_pred)[index]
-        dc = np.ones((1, n_data * n_t)).dot(grad_pred)[index]
-
-        eps = 1e-4
-        for i, grad in enumerate([du, dv, dw, db, dc]):
-            params = [
-                self.u.copy(), self.u.copy(), self.v.copy(
-                ), self.v.copy(), self.w.copy(), self.w.copy(),
-                self.b.copy(), self.b.copy(), self.c.copy(), self.c.copy()
-            ]
-            params[2 * i + 0][index] += eps
-            params[2 * i + 1][index] -= eps
-            h_1, h_2 = np.zeros((n_t * n_data, self.n_hidden)
-                                ), np.zeros((n_t * n_data, self.n_hidden))
-            for t in range(n_t):
-                t_idx = np.arange(t * n_data, (t + 1) * n_data)
-                t_idx_prev = t_idx - n_data if t > 0 else t_idx
-                h_1[t_idx] = self.act_func(x_batch[t_idx].dot(
-                    params[0]) + h_1[t_idx_prev].dot(params[4]) + params[6])
-                h_2[t_idx] = self.act_func(x_batch[t_idx].dot(
-                    params[1]) + h_2[t_idx_prev].dot(params[5]) + params[7])
-            pred_1 = cross_entropy(softmax(h_1.dot(params[2]) + params[8]), y)
-            pred_2 = cross_entropy(softmax(h_2.dot(params[3]) + params[9]), y)
-            print('gradient_check', ((pred_1 - pred_2) / eps / 2 - grad) / eps / eps)
 
     def sgd(self, grad_u, grad_w, grad_b, grad_v, grad_c):
         alpha = self.lr / self.batch_size / self.n_t
@@ -264,8 +217,8 @@ def text_generation(use_word=True):
 
 
 def main():
-    # text_generation(use_word=False)
-    binary_add_test()
+    text_generation(use_word=False)
+    # binary_add_test()
 
 
 if __name__ == "__main__":

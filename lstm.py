@@ -2,6 +2,9 @@ import numpy as np
 import requests
 import re
 
+# generate sentences base on letters. Model is trained with Alice's Adventures in Wonderland
+# example output "'Oh, I BEL yourt!' Saic 'Alice thing seemst,'
+# Alice reminused all cranged at the end of everying and bring rause
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -128,89 +131,6 @@ class LSTM(object):
             print(self.loss(self.predict(x).reshape(n_t * n_data,
                                                     self.n_label), y.reshape(n_t * n_data, self.n_label)))
 
-    def gradient_check(self, x, label):
-        n_t, n_data, n_input = x.shape
-        y = np.zeros((n_t * n_data, self.n_label))
-        y[np.arange(n_t * n_data), label.flatten()] = 1
-        x_batch = x.reshape(n_t * n_data, n_input)
-        h, f, i, c, o, c_bar, grad_f, grad_i, grad_o, grad_c, grad_c_bar = [
-            np.zeros((n_t * n_data, self.n_hidden)) for _ in range(11)
-        ]
-
-        constant = np.ones((1, n_data * n_t))
-        # forward pass
-        for t in range(n_t):
-            t_idx = np.arange(t * n_data, (t + 1) * n_data)
-            t_idx_prev = t_idx - n_data if t > 0 else t_idx
-
-            xt_batch, ht_prev = x_batch[t_idx], h[t_idx_prev]
-            f[t_idx] = sigmoid(xt_batch @ self.w_f + ht_prev @ self.u_f + self.b_f)
-            i[t_idx] = sigmoid(xt_batch @ self.w_i + ht_prev @ self.u_i + self.b_i)
-            o[t_idx] = sigmoid(xt_batch @ self.w_o + ht_prev @ self.u_o + self.b_o)
-            c_bar[t_idx] = tanh(xt_batch @ self.w_c + ht_prev @ self.u_c + self.b_c)
-            c[t_idx] = f[t_idx] * c[t_idx_prev] + i[t_idx] * c_bar[t_idx]
-            h[t_idx] = o[t_idx] * tanh(c[t_idx])
-
-        c_prev = np.zeros(c.shape)
-        c_prev[n_data:, :] = c[:-n_data, :]
-        h_prev = np.zeros(h.shape)
-        h_prev[n_data:, :] = h[:-n_data, :]
-
-        # back propagation through time
-        grad_v = softmax(h @ self.u_v + self.b_v) - y
-        grad_h = grad_v @ self.u_v.T
-
-        for t in reversed(range(0, n_t)):
-            t_idx = np.arange(t * n_data, (t + 1) * n_data)
-            t_idx_next = t_idx + n_data if t < n_t - 1 else t_idx
-            grad_h[t_idx] += (
-                dsigmoid(grad_f[t_idx_next], f[t_idx_next]) @ self.u_f.T +
-                dsigmoid(grad_i[t_idx_next], i[t_idx_next]) @ self.u_i.T +
-                dsigmoid(grad_o[t_idx_next], o[t_idx_next]) @ self.u_o.T +
-                dtanh(grad_c_bar[t_idx_next], c_bar[t_idx_next]) @ self.u_c.T
-            )
-            grad_c[t_idx] = o[t_idx] * grad_h[t_idx] * \
-                (1 - np.square(np.tanh(c[t_idx]))) + \
-                f[t_idx_next] * grad_c[t_idx_next]
-            grad_f[t_idx] = grad_c[t_idx] * c_prev[t_idx]
-            grad_i[t_idx] = grad_c[t_idx] * c_bar[t_idx]
-            grad_o[t_idx] = grad_h[t_idx] * tanh(c[t_idx])
-            grad_c_bar[t_idx] = grad_c[t_idx] * i[t_idx]
-
-        index = (0, 1)
-        eps = 1e-4
-        for j, grad in enumerate([
-                x_batch.T @ dsigmoid(grad_f, f), x_batch.T @ dsigmoid(grad_i, i), x_batch.T @ dtanh(grad_c_bar, c_bar), x_batch.T @ dsigmoid(grad_o, o),
-                h_prev.T @ dsigmoid(grad_f, f), h_prev.T @ dsigmoid(grad_i, i), h_prev.T @ dtanh(grad_c_bar, c_bar), h_prev.T @ dsigmoid(grad_o, o), h.T @ grad_v,
-                constant @ dsigmoid(grad_f, f), constant @ dsigmoid(grad_i, i), constant @ dtanh(grad_c_bar, c_bar), constant @ dsigmoid(grad_o, o), constant @ grad_v
-        ]):
-            preds = [0, 0]
-            for sign in [+1, -1]:
-                params = [param.copy() for param in self.param_list]
-                params[j][index] += sign * eps
-
-                w_f_a, w_i_a, w_c_a, w_o_a, u_f_a, u_i_a, u_c_a, u_o_a, u_v_a, b_f_a, b_i_a, b_c_a, b_o_a, b_v_a = params
-                h_a, f_a, i_a, c_a, o_a, c_bar_a = [
-                    np.zeros((n_t * n_data, self.n_hidden)) for _ in range(6)
-                ]
-
-                for t in range(n_t):
-                    t_idx = np.arange(t * n_data, (t + 1) * n_data)
-                    t_idx_prev = t_idx - n_data if t > 0 else t_idx
-
-                    xt_batch, ht_prev_a = x_batch[t_idx], h_a[t_idx_prev]
-                    f_a[t_idx] = sigmoid(xt_batch @ w_f_a + ht_prev_a @ u_f_a + b_f_a)
-                    i_a[t_idx] = sigmoid(xt_batch @ w_i_a + ht_prev_a @ u_i_a + b_i_a)
-                    o_a[t_idx] = sigmoid(xt_batch @ w_o_a + ht_prev_a @ u_o_a + b_o_a)
-                    c_bar_a[t_idx] = tanh(xt_batch @ w_c_a + ht_prev_a @ u_c_a + b_c_a)
-                    c_a[t_idx] = f_a[t_idx] * c_a[t_idx_prev] + \
-                        i_a[t_idx] * c_bar_a[t_idx]
-                    h_a[t_idx] = o_a[t_idx] * tanh(c_a[t_idx])
-
-                preds[(sign + 1) // 2] = cross_entropy(softmax(h_a @ u_v_a + b_v_a), y)
-            print('gradient_check', j,
-                  ((preds[1] - preds[0]) / eps / 2 - grad[index]) / eps / eps)
-
     def sgd(self, grad_list):
         alpha = self.lr / self.batch_size / self.n_t
         for params, grads in zip(self.param_list, grad_list):
@@ -295,8 +215,6 @@ def text_generation(use_word=True):
 
     lstm = LSTM(vocab_size, 500, vocab_size, seq_length)
     lstm.ix_to_word = ix_to_word
-    lstm.gradient_check(train_x[:, np.arange(32), :],
-                        train_y[:, np.arange(32)])
     lstm.fit(train_x, train_y)
     print('train loss', (np.argmax(lstm.predict(train_x), axis=2)
                          == train_y).sum() / (train_y.shape[0] * train_y.shape[1]))
