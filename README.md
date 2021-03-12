@@ -1,24 +1,22 @@
 # Simple-Implementation-of-ML-Algorithms
-My simplest implementations of common ML algorithms from scratch.
-- For an easy understanding, most of the codes implements only minimal versin of the algorithm.
-- The implementation uses only numpy.
-- Most algorithms are within 100 lines of codes.
+### My simplest implementations of common ML algorithms from scratch.
+* For an easy understanding, most of the codes implements only minimal versin of the algorithm.
+* The implementation uses only numpy.
+* Most algorithms are within 100 lines of codes.
 
-Also see decision boundary visualization for implemented classifiers in decision_boundary_vis.py
+### Example Output
+* See decision boundary visualization for implemented classifiers in decision_boundary_vis.py
 ![supervised_model](supervised_model.png)
 
-See the results from the generative models trained with MNIST dataset:
-Restricted Boltzmann Machine (RBM):
-![rbm](rbm.png)
+* See the results from the generative models trained with MNIST dataset:
+    * Restricted Boltzmann Machine (RBM): ![rbm](rbm.png)
 
-Variational Autoencoders (VAE):
-![vae](vae.png)
+    * Variational Autoencoders (VAE): ![vae](vae.png)
 
-Deep Convolutional Generative Adversarial Network (DC GAN):
-![dc_gan](dc_gan.png)
+    * Deep Convolutional Generative Adversarial Network (DC GAN): ![dc_gan](dc_gan.png)
 
 
-Implemented algorithms:
+### Implemented algorithms:
 
 * Regression Models
     * Linear Regression
