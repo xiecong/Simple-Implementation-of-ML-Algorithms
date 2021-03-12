@@ -7,6 +7,17 @@ My simplest implementations of common ML algorithms from scratch.
 Also see decision boundary visualization for implemented classifiers in decision_boundary_vis.py
 ![supervised_model](supervised_model.png)
 
+See the results from the generative models trained with MNIST dataset:
+Restricted Boltzmann Machine (RBM):
+![rbm](rbm.png)
+
+Variational Autoencoders (VAE):
+![vae](vae.png)
+
+Deep Convolutional Generative Adversarial Network (DC GAN):
+![dc_gan](dc_gan.png)
+
+
 Implemented algorithms:
 
 * Regression Models
