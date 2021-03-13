@@ -112,7 +112,8 @@
     * Fitting by Baum-Welch
     * Prediction by Viterbi
 
-* WIP
-    * add results in this readme
+* Heuristic Search
+    * Monte Carlo tree search
+    * Minimax
 
 Feel free to use the code. Please contact me if you have any question: xiecng [at] gmail.com

@@ -1,6 +1,9 @@
 import numpy as np
 from nn_layers import FullyConnect, Activation, Conv
+from mcts import MiniMax, RandomMove
 # Double deep q learning (DQN) for Tic Tac Toe
+
+
 n_size = 3
 n_connect = 3
 
@@ -11,14 +14,14 @@ def is_done(board):
         x_end = x + n_connect
         x_rev_end = x - n_connect
         y_end = y + n_connect
-        if (
+        if (  # -
                 x_end <= n_size and abs(board[y, x:x_end].sum()) == n_connect
-        ) or (
+        ) or (  # |
                 y_end <= n_size and abs(board[y:y_end, x].sum()) == n_connect
-        ) or (
+        ) or (  # \
                 x_end <= n_size and y_end <= n_size and abs(
                     board[range(y, y_end), range(x, x_end)].sum()) == n_connect
-        ) or (
+        ) or (  # /
                 x_rev_end >= -1 and y_end <= n_size and abs(
                     board[range(y, y_end), range(x, x_rev_end, -1)].sum()) == n_connect
         ):
@@ -26,7 +29,7 @@ def is_done(board):
     return 0
 
 
-def transform_action(action):
+def transform_action(action):  # generating more board by flipping and rotating
     y = action // n_size
     x = action % n_size
     pos = [
@@ -64,41 +67,6 @@ class NN(object):
             if isinstance(layer1, FullyConnect):
                 layer1.w = layer2.w.copy()
                 layer1.b = layer2.b.copy()
-
-
-class Random(object):
-
-    def act(self, board, player):
-        return np.random.choice(n_size * n_size, 1, p=(1 - np.abs(board)) / (1 - abs(board)).sum())[0]
-
-
-class MiniMax(object):
-
-    def __init__(self):
-        self.board_memory = {}
-
-    def value(self, board, player):
-        board_str = ''.join([str(int(i)) for i in board])
-        if board_str in self.board_memory:
-            return self.board_memory[board_str]
-        winner = is_done(board.reshape(n_size, n_size))
-        if np.abs(board).sum() == board.shape[0] or winner != 0:
-            return -1, winner * player
-        values = np.ones(board.shape[0]) * -2
-        for i in range(board.shape[0]):
-            if board[i] != 0:
-                continue
-            board[i] = player
-            _, v = self.value(board, -player)
-            values[i] = -v
-            board[i] = 0
-        vmax = np.amax(values)
-        self.board_memory[board_str] = ([i for i in range(
-            board.shape[0]) if values[i] == vmax], vmax)
-        return self.board_memory[board_str]
-
-    def act(self, board, player):
-        return np.random.choice(self.value(board, player)[0])
 
 
 class DQN(object):
@@ -230,7 +198,7 @@ def test(agents):
 def main():
     dqn = DQN()
     minimax = MiniMax()
-    random = Random()
+    random = RandomMove()
     dqn.fit([dqn, minimax])
     print('\t\t\t\twin/draw/lose')
     dqn.eps = 0.1
