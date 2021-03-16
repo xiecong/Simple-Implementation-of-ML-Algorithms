@@ -1,7 +1,7 @@
 import numpy as np
 from nn_layers import FullyConnect, Activation, Conv
 from mcts import MiniMax, RandomMove
-# Double deep q learning (DQN) for Tic Tac Toe
+# Double deep q learning (DQN) for Tic Tac Toe / Gomoku
 
 
 n_size = 3
@@ -78,7 +78,7 @@ class DQN(object):
         self.training_size = self.n_epochs * self.batch_size
         self.gamma = 0.95
         self.eps = eps
-        self.eps_decay = 0.99
+        self.eps_decay = 0.999
         lr = 0.01
         self.policy_net, self.target_net = [NN([
             Conv((2, n_size, n_size), k_size=n_connect,
@@ -88,6 +88,7 @@ class DQN(object):
                          lr=lr, optimizer='RMSProp'),
             Activation(act_type='ReLU'),
             FullyConnect([16], [n_size * n_size], lr=lr, optimizer='RMSProp'),
+            Activation(act_type='Tanh'),
         ]) for _ in range(2)]
         self.states = np.zeros((0, 2, n_size, n_size))
         self.next_states = np.zeros((0, 2, n_size, n_size))
@@ -150,7 +151,7 @@ class DQN(object):
 
 
 def play(agents, dqn=None):
-    boards = np.zeros((8, n_size * n_size))
+    boards = np.zeros((8, n_size * n_size)).astype(int)
     record = np.zeros(n_size * n_size)
     winner = 0
     n_moves = 0
@@ -188,7 +189,7 @@ def play(agents, dqn=None):
 
 def test(agents):
     game_records = [0, 0, 0]
-    for i in range(1000):
+    for i in range(100):
         idx = [0, 1]  # np.random.permutation([0, 1]).astype(int)
         board, winner = play([agents[idx[0]], agents[idx[1]]])
         game_records[-int(winner) * (2 * idx[0] - 1) + 1] += 1
@@ -208,6 +209,8 @@ def main():
     print('random vs. dqn', test([random, dqn]))
     print('dqn vs. minimax', test([dqn, minimax]))
     print('minimax vs. dqn', test([minimax, dqn]))
+    print('random vs. minimax', test([random, minimax]))
+    print('minimax vs. random', test([minimax, random]))
 
 if __name__ == "__main__":
     main()
