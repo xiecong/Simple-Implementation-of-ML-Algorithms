@@ -1,5 +1,6 @@
 import numpy as np
-# implements Minimax and Monte Carlo tree search for Tic Tac Toe / Gomoku
+from minimax import MiniMax, RandomMove  # for testing purpose
+# implements Monte Carlo tree search for Tic Tac Toe / Gomoku
 
 
 n_size = 3
@@ -52,59 +53,6 @@ def test(agents):
         board, winner = play([agents[idx[0]], agents[idx[1]]])
         game_records[-int(winner) * (2 * idx[0] - 1) + 1] += 1
     return game_records
-
-
-class RandomMove(object):
-
-    def act(self, board, player):
-        return np.random.choice(n_size * n_size, 1, p=(1 - np.abs(board)) / (1 - abs(board)).sum())[0]
-
-
-class MiniMax(object):
-
-    def __init__(self, max_depth=4):
-        self.cache = {}
-        self.max_depth = max_depth
-
-    def heuristic(self, board, player):
-        # a. in [1, -1], b. score(player1) = -score(player2)
-        evals = [0, 0]  # for player -1 1
-        for i in range(n_size * n_size):
-            if board[i] == 0:
-                continue
-            evals[(board[i] + 1 ) // 2] += \
-                (i % n_size < n_size - 1 and board[i] == board[i + 1]) + \
-                (i + n_size < board.shape[0] - 1 and board[i] == board[i + n_size]) + \
-                (i + n_size < board.shape[0] - 1 and i % n_size > 0 and board[i] == board[i + n_size - 1]) + \
-                (i + n_size < board.shape[0] - 1 and i % n_size <
-                 n_size - 1 and board[i] == board[i + n_size + 1])
-        return (-evals[0] * player + evals[1] * player) / (evals[0] + evals[1] + 1)
-
-    def score(self, board, player, depth):
-        board_str = ''.join([str(int(i)) for i in board])
-        if board_str in self.cache:  # cached before
-            return self.cache[board_str]
-        winner = is_done(board.reshape(n_size, n_size))
-        if np.abs(board).sum() == board.shape[0] or winner != 0:  # game end
-            return -1, winner * player
-        # a value less than -1 so next step can pick a legal move
-        board_scores = np.ones(board.shape[0]) * -2
-        for i in range(board.shape[0]):
-            if board[i] != 0:
-                continue
-            board[i] = player
-            board_scores[i] = -self.score(board, -player, depth + 1)[
-                1] if depth < self.max_depth else self.heuristic(board, player)
-            board[i] = 0
-        best_score = np.amax(board_scores)
-        best_moves = [i for i in range(board.shape[0]) if board_scores[
-            i] == best_score]
-        if np.abs(best_score) == 1:  # certain win or lose rather than heuristics
-            self.cache[board_str] = best_moves, best_score
-        return best_moves, best_score
-
-    def act(self, board, player):
-        return np.random.choice(self.score(board, player, 0)[0])
 
 
 class MCTSNode(object):
@@ -190,7 +138,7 @@ class MCTS(object):
 
 
 def main():
-    minimax = MiniMax()
+    minimax = MiniMax(max_depth=5)
     mcts = MCTS()
     random = RandomMove()
     print('\t\t\t\twin/draw/lose')
@@ -200,8 +148,6 @@ def main():
     print('mcts vs. random', test([mcts, random]))
     print('minimax vs. mcts', test([minimax, mcts]))
     print('mcts vs. minimax', test([mcts, minimax]))
-    print('random vs. minimax', test([random, minimax]))
-    print('minimax vs. random', test([minimax, random]))
 
 if __name__ == "__main__":
     main()

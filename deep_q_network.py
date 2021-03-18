@@ -1,6 +1,6 @@
 import numpy as np
 from nn_layers import FullyConnect, Activation, Conv
-from mcts import MiniMax, RandomMove
+from minimax import MiniMax, RandomMove
 # Double deep q learning (DQN) for Tic Tac Toe / Gomoku
 
 
@@ -198,7 +198,7 @@ def test(agents):
 
 def main():
     dqn = DQN()
-    minimax = MiniMax()
+    minimax = MiniMax(max_depth=4)
     random = RandomMove()
     dqn.fit([dqn, minimax])
     print('\t\t\t\twin/draw/lose')
@@ -209,8 +209,6 @@ def main():
     print('random vs. dqn', test([random, dqn]))
     print('dqn vs. minimax', test([dqn, minimax]))
     print('minimax vs. dqn', test([minimax, dqn]))
-    print('random vs. minimax', test([random, minimax]))
-    print('minimax vs. random', test([minimax, random]))
 
 if __name__ == "__main__":
     main()

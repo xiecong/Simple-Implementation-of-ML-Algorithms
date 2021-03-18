@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.datasets import load_digits, fetch_openml
-from mlp import MLP
-from rbm import RBM
+from multilayer_perceptron import MLP
+from restricted_boltzmann_machine import RBM
 
 
 class DBN(object):

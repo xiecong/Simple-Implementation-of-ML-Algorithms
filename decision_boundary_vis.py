@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mlp import MLP
-from gbdt import GBDT
+from multilayer_perceptron import MLP
+from gradient_boosting_decision_tree import GBDT
 from xgboost import XGBoost
 from random_forest import RandomForest
 from adaboost import AdaBoost
 from factorization_machines import FactorizationMachines
-from svm import SVM
-from knn import kNearestNeighbor
+from support_vector_machine import SVM
+from k_nearest_neighbor import kNearestNeighbor
 
 
 def gen_linear(train_num):

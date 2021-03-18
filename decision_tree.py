@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.datasets import load_iris
-# TO DO: add sample weights
 
 
 def weighted_histo(y, w):
