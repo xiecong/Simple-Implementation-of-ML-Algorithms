@@ -47,7 +47,7 @@ def play(agents):
 
 def test(agents):
     game_records = [0, 0, 0]
-    for i in range(1000):
+    for i in range(100):
         idx = [0, 1]  # np.random.permutation([0, 1]).astype(int)
         board, winner = play([agents[idx[0]], agents[idx[1]]])
         game_records[-int(winner) * (2 * idx[0] - 1) + 1] += 1
@@ -107,20 +107,86 @@ class MiniMax(object):
         return np.random.choice(self.score(board, player, 0)[0])
 
 
+class MCTSNode(object):
+
+    def __init__(self, board):
+        self.board = board
+        self.simulations = [0, 0, 0]  # lose/draw/win
+        self.n_visit = 0
+        self.children = {}
+        self.score = 0
+        self.done = np.abs(board).sum() == board.shape[
+            0] or is_done(board.reshape(n_size, n_size)) != 0
+
+    def update(self, result):
+        self.simulations[result + 1] += 1  # -1/0/1 -> lose/draw/win (0,1,2)
+        self.n_visit += 1
+        self.score = (self.simulations[2] + 1 * self.simulations[1]) / self.n_visit  # 1 for draw
+
+
 class MCTS(object):
 
-    def __init__(self, max_depth=4):
+    def __init__(self):
         self.cache = {}
-        self.max_depth = max_depth
+        self.rm = RandomMove()
+        self.n_iteration = 100
 
-    def heuristic(self, board, player):  # todo
-        pass
+    def legal_moves(self, board):
+        return [i for i in range(n_size * n_size) if board[i] == 0]
 
-    def score(self, board, player, depth):  # todo
-        pass
+    def selection(self, node):
+        max_uct = -np.inf
+        next_moves = []
+        for move in self.legal_moves(node.board):
+            score = node.children[move].score if move in node.children else 0
+            child_visits = node.children[
+                move].n_visit if move in node.children else 1e-4
+            this_uct = score + np.sqrt(2 * np.log(node.n_visit) / child_visits)
+            if max_uct < this_uct:
+                next_moves = [move]
+                max_uct = this_uct
+            elif max_uct == this_uct:
+                next_moves.append(move)
+        return np.random.choice(next_moves)
+
+    def simulation(self, board, player):  # todo add heuristics
+        winner = is_done(board.reshape((n_size, n_size)))
+        while np.abs(winner) == 0 and np.abs(board).sum() < board.shape[0]:
+            board[self.rm.act(board, player)] = player
+            winner = is_done(board.reshape((n_size, n_size)))
+            player = -player
+        return winner
+
+    def search(self, root_node, player):
+        for _ in range(self.n_iteration):
+            parents = [root_node]
+            this_player = -player
+            node = root_node
+            while not node.done and node.n_visit > 0:
+                # selection
+                this_player = -this_player
+                next_move = self.selection(node)
+                if next_move not in node.children:  # expansion
+                    child_board = node.board.copy()
+                    child_board[next_move] = this_player
+                    node.children[next_move] = MCTSNode(child_board)
+                node = node.children[next_move]
+                parents.append(node)
+            # simulation
+            result = self.simulation(node.board.copy(), this_player)
+            # backpropagation
+            for p in parents[::-1]:
+                p.update(result * this_player)
+                this_player = -this_player
 
     def act(self, board, player):
-        return np.random.choice(self.score(board, player)[0])
+        board_str = ''.join([str(int(i)) for i in board])
+        if board_str not in self.cache:
+            self.cache[board_str] = MCTSNode(board.copy())
+        node = self.cache[board_str]
+        self.search(node, player)
+        v_max = np.amax([c.n_visit for m, c in node.children.items()])
+        return np.random.choice([m for m, c in node.children.items() if c.n_visit == v_max])
 
 
 def main():
@@ -128,10 +194,14 @@ def main():
     mcts = MCTS()
     random = RandomMove()
     print('\t\t\t\twin/draw/lose')
+    test([mcts, mcts])
+    print('mcts vs. mcts', test([mcts, mcts]))
+    print('random vs. mcts', test([random, mcts]))
+    print('mcts vs. random', test([mcts, random]))
+    print('minimax vs. mcts', test([minimax, mcts]))
+    print('mcts vs. minimax', test([mcts, minimax]))
     print('random vs. minimax', test([random, minimax]))
-    print('minimax vs. minimax', test([minimax, minimax]))
     print('minimax vs. random', test([minimax, random]))
-
 
 if __name__ == "__main__":
     main()
