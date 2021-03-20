@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 # implements and visualize Gradient Descent, Momentum, Nesterov, AdaGrad,
-# RMSprop, Adam, and Annealing Simulation
+# RMSprop, Adam, and Simulated Annealing
 
 
 class Optimization(object):
@@ -9,7 +9,7 @@ class Optimization(object):
     def __init__(self):
         self.optimizers = {'GD': self.gradient_descent, 'Momentum': self.momentum, 'Nesterov': self.nesterov,
                            'AdaGrad': self.adagrad, 'RMSprop': self.rmsprop, 'Adam': self.adam}
-        self.gamma = 0.9
+        self.gamma = 0.8
         self.eps = 1e-8
         self.reset()
 
@@ -44,8 +44,8 @@ class Optimization(object):
             (np.sqrt(self.cache) + self.eps)
 
     def adam(self, grad):
-        beta1 = 0.9
-        beta2 = 0.999
+        beta1 = 0.5
+        beta2 = 0.8
         self.mom = beta1 * self.mom + (1 - beta1) * grad
         self.cache = beta2 * self.cache + (1 - beta2) * np.square(grad)
         self.pos -= self.learning_rate * self.mom / \
@@ -55,7 +55,7 @@ class Optimization(object):
 
     def optimize(self, opt_algo, grad_func, x, y):
         trace = [self.pos.copy()]
-        for i in range(40):
+        for i in range(30):
             grad = grad_func(self.pos, x, y)
             self.optimizers[opt_algo](grad)
             if np.sum(np.square(self.pos - np.array([3, 5]))) < 1:
@@ -119,7 +119,7 @@ def main():
         w_mesh.shape), 70, cmap='bwr_r', alpha=0.5)
     opt = Optimization()
     an = Annealing()
-    for i, opt_algo, lr in zip(range(7), ['GD', 'Momentum', 'Nesterov', 'AdaGrad', 'RMSprop', 'Adam', 'Annealing'], [0.0035, 0.0005, 0.0006, 10, 2, 4, 0.5]):
+    for i, opt_algo, lr in zip(range(7), ['GD', 'Momentum', 'Nesterov', 'AdaGrad', 'RMSprop', 'Adam', 'Annealing'], [0.0035, 0.0005, 0.0006, 10, 2, 5, 0.5]):
         if opt_algo == 'Annealing':
             trace = an.annealing(x_expand, y)
         else:

@@ -1,6 +1,6 @@
 # Simple-Implementation-of-ML-Algorithms
 ### My simplest implementations of common ML algorithms from scratch.
-* Most commonly used algorithms in Deep Learning, Ensemble Learning, Reinforcement Learning, Optimization Algorithms, Swarm Intelligence Algorithm, and other basic ML algorithms (see below list for more details).
+* Most commonly used algorithms including Regressions, Bayes Models, Deep Learning, Ensemble Learning, Reinforcement Learning, Optimization Algorithms, Swarm Intelligence Algorithm, Heuristic Search, Markov Model, and other basic ML algorithms (see below list for more details).
 * For an easy understanding, most of the codes implements only minimal version of the algorithm.
 * The implementation uses only numpy.
 * Most algorithms are within 100 lines of codes.
@@ -70,6 +70,9 @@
         * Deep Belief Network (DBN) `deep_belief_network.py`
         * Variational autoencoder (VAE) `variational_autoencoder.py`
         * Generative Adversarial Network (GAN) `generative_adversarial_network.py`
+            * Vanilla GAN
+            * Deep Convolutional GAN (DCGAN)
+            * discriminator vs generator
     * Reinforcement Learning
         * Deep Q-Network (DQN) `deep_q_network.py`
 * Layers `nn_layers.py` / `simple_cnn_layers.py`
@@ -93,14 +96,16 @@
     * L1/L2 Regularization
     * Gradient check
 
-#### Optimization Algorithms `optimization_visualization.py` / `multilayer_perceptron.py`
-* Stochastic Gradient Descent
-* Gradient Descent with Momentum
-* Nesterov Momentum
-* AdaGrad
-* RMSProp
-* Adam
-* Annealing Simulation
+#### Optimization Algorithms
+* Gradient Descent and variations `optimization_visualization.py` / `multilayer_perceptron.py`
+    * Stochastic Gradient Descent
+    * Gradient Descent with Momentum
+    * Nesterov Momentum
+    * AdaGrad
+    * RMSProp
+    * Adam
+* Monte Carlo method for global optimum
+    * Simulated annealing  `optimization_visualization.py`
 
 #### Other Supervised Models
 * k-Nearest Neighbors (kNN) `k_nearest_neighbors.py`
@@ -110,14 +115,13 @@
     * Different heuristics for selecting pairs in SMO
 
 #### Swarm Intelligence
-* Evolutionary / Genetic Algorithm (EA) `evolutionary_algorithm.py`
-    * Training a NN model
+* Evolutionary Algorithm (EA) `evolutionary_algorithm.py`
+    * Training a NN model by Genetic Algorithm
     * Selection by Fitness
     * Crossover approaches
     * Mutation rate
-* Particle Swarm Optimization (PSO) (WIP)
-* Differential Evolution (DE) (WIP)
-* Ant Colony Optimization (ACO) (WIP)
+* Ant Colony Optimization (ACO)
+    * Traveling Salesman Problem
 
 #### Markov Model
 * Hidden Markov Model `hidden_markov_model.py`
