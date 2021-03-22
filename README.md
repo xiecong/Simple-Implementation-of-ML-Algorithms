@@ -1,6 +1,6 @@
 # Simple-Implementation-of-ML-Algorithms
 ### My simplest implementations of common ML algorithms from scratch.
-* Most commonly used algorithms including Regressions, Bayes Models, Deep Learning, Ensemble Learning, Reinforcement Learning, Optimization Algorithms, Swarm Intelligence Algorithm, Heuristic Search, Markov Model, and other basic ML algorithms (see below list for more details).
+* Most commonly used algorithms including Regressions, Graph Models, Deep Learning, Ensemble Learning, Reinforcement Learning, Optimization Algorithms, Swarm Intelligence, Heuristic Search, and other basic ML algorithms (see below list for more details).
 * For an easy understanding, most of the codes implements only minimal version of the algorithm.
 * The implementation uses only numpy.
 * Most algorithms are within 100 lines of codes.
@@ -16,7 +16,7 @@
 
     * Variational Autoencoders (VAE) in `variational_autoencoder.py`: ![vae](vae.png)
     
-    * Restricted Boltzmann Machine (RBM) `restricted_boltzman_machine.py`: ![rbm](rbm.png)
+    * Average image by Restricted Boltzmann Machine (RBM) `restricted_boltzman_machine.py`: ![rbm](rbm.png)
     
 
 ### Implemented algorithms:
@@ -32,14 +32,6 @@
 * Factorization Machines `factorization_machines.py`
     * Regularization
     * Classification/regression
-
-#### Bayes Models
-* Naive Bayes `naive_bayes.py`
-    * Multinomial model
-    * Document tokenizer
-* Beyesian Network `beyesian_net.py`
-    * Conditional probability MLE
-    * Beyesian inference
 
 #### Tree Models and Ensemble Learning
 * Decision Tree `decision_tree.py`
@@ -75,6 +67,7 @@
             * discriminator vs generator
     * Reinforcement Learning
         * Deep Q-Network (DQN) `deep_q_network.py`
+    * Transfer Learning (WIP)
 * Layers `nn_layers.py` / `simple_cnn_layers.py`
     * Feedforward layer (dense)
     * Convolutional layer
@@ -86,7 +79,7 @@
         * Tanh (Leaky)
         * Sigmoid
     * Drop out layer (WIP)
-* Training
+* Training `nn_layers.py` / `multilayer_perceptron.py`
     * Mini Batch
     * He initialization
     * Loss functions
@@ -107,6 +100,21 @@
 * Monte Carlo method for global optimum
     * Simulated annealing  `optimization_visualization.py`
 
+#### Graph Models
+* Naive Bayes `naive_bayes.py`
+    * Multinomial model
+    * Document tokenizer
+* Beyesian Network `beyesian_net.py`
+    * Conditional probability MLE
+    * Beyesian inference
+* Hidden Markov Model `hidden_markov_model.py`
+    * Fitting by Baum-Welch
+    * Prediction by Viterbi
+* Markov Random Field `markov_random_field.py`
+    * Image Segmentation
+    * Simulated Annealing for optimal Energy Function
+* Conditional Random Field (WIP)
+
 #### Other Supervised Models
 * k-Nearest Neighbors (kNN) `k_nearest_neighbors.py`
 * Support Vector Machine (SVM) `support_vector_machine.py`
@@ -120,13 +128,8 @@
     * Selection by Fitness
     * Crossover approaches
     * Mutation rate
-* Ant Colony Optimization (ACO)
+* Ant Colony Optimization (ACO) `ant_colony.py`
     * Traveling Salesman Problem
-
-#### Markov Model
-* Hidden Markov Model `hidden_markov_model.py`
-    * Fitting by Baum-Welch
-    * Prediction by Viterbi
 
 #### Heuristic Search
 * Monte Carlo tree search `monte_carlo_tree_search.py`

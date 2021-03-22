@@ -133,7 +133,7 @@ class DQN(object):
         m = sum(valid_mask)
         p = self.eps / m * valid_mask
         p[max_idx] = 1 - self.eps + self.eps / m
-        return np.random.choice(n_size * n_size, 1, p=p)[0]
+        return np.random.choice(n_size * n_size, p=p)
 
     def fit(self, agents):
         while self.states.shape[0] < self.training_size:

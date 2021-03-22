@@ -57,7 +57,7 @@ def test(agents):
 class RandomMove(object):
 
     def act(self, board, player):
-        return np.random.choice(n_size * n_size, 1, p=(1 - np.abs(board)) / (1 - abs(board)).sum())[0]
+        return np.random.choice(n_size * n_size, p=(1 - np.abs(board)) / (1 - abs(board)).sum())
 
 
 class MiniMax(object):
