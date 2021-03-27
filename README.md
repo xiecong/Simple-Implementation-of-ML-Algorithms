@@ -113,7 +113,6 @@
 * Markov Random Field `markov_random_field.py`
     * Image Segmentation
     * Simulated Annealing for optimal Energy Function
-* Conditional Random Field (WIP)
 
 #### Other Supervised Models
 * k-Nearest Neighbors (kNN) `k_nearest_neighbors.py`
