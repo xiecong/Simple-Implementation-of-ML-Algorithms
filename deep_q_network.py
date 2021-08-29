@@ -64,7 +64,7 @@ class NN(object):
 
     def copy_weights(self, nn):
         for layer1, layer2 in zip(self.layers, nn.layers):
-            if isinstance(layer1, FullyConnect):
+            if isinstance(layer1, FullyConnect) or isinstance(layer1, Conv):
                 layer1.w = layer2.w.copy()
                 layer1.b = layer2.b.copy()
 
@@ -74,21 +74,27 @@ class DQN(object):
     def __init__(self, eps=1):
         self.n_episodes = 1000
         self.batch_size = 32
-        self.n_epochs = 300
+        self.n_epochs = 200
         self.training_size = self.n_epochs * self.batch_size
-        self.gamma = 0.95
+        self.gamma = 0.1
         self.eps = eps
-        self.eps_decay = 0.999
-        lr = 0.01
+        self.eps_decay = 0.998
+        lr = 0.005
         self.policy_net, self.target_net = [NN([
             Conv((2, n_size, n_size), k_size=n_connect,
                  k_num=16, optimizer='RMSProp'),
-            Activation(act_type='ReLU'),
+            Activation(act_type='LeakyReLU'),
             FullyConnect([16, n_size - n_connect + 1, n_size - n_connect + 1], [16],
                          lr=lr, optimizer='RMSProp'),
-            Activation(act_type='ReLU'),
+            Activation(act_type='LeakyReLU'),
+            FullyConnect([16], [16], lr=lr, optimizer='RMSProp'),
+            Activation(act_type='LeakyReLU'),
+            FullyConnect([16], [16], lr=lr, optimizer='RMSProp'),
+            Activation(act_type='LeakyReLU'),
+            FullyConnect([16], [16], lr=lr, optimizer='RMSProp'),
+            Activation(act_type='LeakyReLU'),
             FullyConnect([16], [n_size * n_size], lr=lr, optimizer='RMSProp'),
-            Activation(act_type='Tanh'),
+            # Activation(act_type='Tanh'),
         ]) for _ in range(2)]
         self.states = np.zeros((0, 2, n_size, n_size))
         self.next_states = np.zeros((0, 2, n_size, n_size))
@@ -146,7 +152,7 @@ class DQN(object):
             print('iteration:', iteration, 'eps:', self.eps,
                   'winner:', winner, 'board:\n', board)
             self.replay()
-            if iteration % 50 == 0:
+            if iteration % 64 == 0:
                 self.target_net.copy_weights(self.policy_net)
 
 
@@ -200,7 +206,7 @@ def main():
     dqn = DQN()
     minimax = MiniMax(max_depth=4)
     random = RandomMove()
-    dqn.fit([dqn, minimax])
+    dqn.fit([dqn, dqn])
     print('\t\t\t\twin/draw/lose')
     dqn.eps = 0.1
     print('dqn vs. dqn\t', test([dqn, dqn]))
