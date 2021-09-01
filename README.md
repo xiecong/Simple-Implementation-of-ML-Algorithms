@@ -65,8 +65,6 @@
             * Vanilla GAN
             * Deep Convolutional GAN (DCGAN)
             * discriminator vs generator
-    * Reinforcement Learning
-        * Deep Q-Network (DQN) `deep_q_network.py`
     * Transfer Learning (WIP)
 * Layers `nn_layers.py` / `simple_cnn_layers.py`
     * Feedforward layer (dense)
@@ -114,12 +112,14 @@
     * Image Segmentation
     * Simulated Annealing for optimal Energy Function
 
-#### Other Supervised Models
+#### Instance-based Learning and Kernel Machines
 * k-Nearest Neighbors (kNN) `k_nearest_neighbors.py`
+* Learning Vector Quantization (WIP)
 * Support Vector Machine (SVM) `support_vector_machine.py`
     * Soft boundary
     * SMO algorithm
     * Different heuristics for selecting pairs in SMO
+* Radial Basis Function Network (WIP)
 
 #### Swarm Intelligence
 * Evolutionary Algorithm (EA) `evolutionary_algorithm.py`
@@ -134,5 +134,17 @@
 * Monte Carlo tree search `monte_carlo_tree_search.py`
     * Upper Confidence Bound 1 applied to trees (UCT)
 * Minimax `minimax.py`
+
+#### Reinforcement Learning
+* Deep Q-Network (DQN) `deep_q_network.py`
+    * CNN Target & Policy Net
+    * Epsilon-Greedy
+* Temporal difference learning (WIP)
+
+#### TODO - Unsupervised Learning
+* Clustering
+    * k-Means / dbscan / spectrum / hierachical / SOM
+* Dimension Reduction
+    * Principal Component Analysis / Linear Discriminant Analysis / mds / tsne
 
 Feel free to use the code. Please contact me if you have any question: xiecng [at] gmail.com

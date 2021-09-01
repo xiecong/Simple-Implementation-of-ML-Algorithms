@@ -72,16 +72,16 @@ class NN(object):
 class DQN(object):
 
     def __init__(self, eps=1):
-        self.n_episodes = 1000
+        self.n_episodes = 300
         self.batch_size = 32
         self.n_epochs = 200
         self.training_size = self.n_epochs * self.batch_size
-        self.gamma = 0.1
+        self.gamma = 0.99
         self.eps = eps
-        self.eps_decay = 0.998
-        lr = 0.005
+        self.eps_decay = 0.99
+        lr = 0.002
         self.policy_net, self.target_net = [NN([
-            Conv((2, n_size, n_size), k_size=n_connect,
+            Conv((3, n_size, n_size), k_size=n_connect,
                  k_num=16, optimizer='RMSProp'),
             Activation(act_type='LeakyReLU'),
             FullyConnect([16, n_size - n_connect + 1, n_size - n_connect + 1], [16],
@@ -96,11 +96,12 @@ class DQN(object):
             FullyConnect([16], [n_size * n_size], lr=lr, optimizer='RMSProp'),
             # Activation(act_type='Tanh'),
         ]) for _ in range(2)]
-        self.states = np.zeros((0, 2, n_size, n_size))
-        self.next_states = np.zeros((0, 2, n_size, n_size))
+        self.states = np.zeros((0, 3, n_size, n_size))
+        self.next_states = np.zeros((0, 3, n_size, n_size))
         self.actions = np.zeros(0).astype(int)
         self.rewards = np.zeros(0)
         self.unfinish_mask = np.zeros(0)
+        self.weights = np.zeros(0)
 
     def replay(self):
         permut = np.random.permutation(
@@ -119,7 +120,7 @@ class DQN(object):
             targets[range(self.batch_size), action_pos] = self.rewards[
                 batch_idx] + self.unfinish_mask[batch_idx] * self.gamma * next_q
 
-            grad = this_q - targets
+            grad = (this_q - targets) * self.weights[batch_idx].reshape(-1, 1)
             loss += np.square(grad).mean()
             self.policy_net.gradient(grad)
             self.policy_net.backward()
@@ -127,7 +128,7 @@ class DQN(object):
 
     def act(self, board, player):
         state = np.array([[(board == player).reshape(
-            n_size, n_size), (board == -player).reshape(n_size, n_size)]])
+            n_size, n_size), (board == -player).reshape(n_size, n_size), (board == 0).reshape(n_size, n_size)]])
         return self.eps_greedy(state)
 
     def eps_greedy(self, state):
@@ -141,55 +142,82 @@ class DQN(object):
         p[max_idx] = 1 - self.eps + self.eps / m
         return np.random.choice(n_size * n_size, p=p)
 
-    def fit(self, agents):
+    def fit(self):
+        random = RandomMove()
+        minimax = MiniMax(max_depth=9)
+        agents = [minimax, self]
         while self.states.shape[0] < self.training_size:
-            idx = np.random.permutation([0, 1]).astype(int)
-            play([agents[idx[0]], agents[idx[1]]], self)
+            # idx = np.random.permutation([0, 1]).astype(int)
+            play(agents, self)
         for iteration in range(self.n_episodes):
             self.eps *= self.eps_decay
-            idx = np.random.permutation([0, 1]).astype(int)
-            board, winner = play([agents[idx[0]], agents[idx[1]]], self)
-            print('iteration:', iteration, 'eps:', self.eps,
-                  'winner:', winner, 'board:\n', board)
-            self.replay()
-            if iteration % 64 == 0:
+            # idx = np.random.permutation([0, 1]).astype(int)
+            play(agents, self)
+            print('iteration:', iteration, 'eps:', self.eps)
+            for i in range(10):
+                self.replay()
+            if iteration % 10 == 0:
                 self.target_net.copy_weights(self.policy_net)
+            temp_eps = self.eps
+            self.eps = 0
+            print('\t\t\t\twin/draw/lose')
+            print('mm vs. dqn', test([minimax, self]))
+            print('dqn vs. mm', test([self, minimax]))
+            print('random vs. dqn', test([random, self]))
+            print('dqn vs. random', test([self, random]))
+            self.eps = temp_eps
+
+    def save_play(self, saved_actions, saved_states, winner, n_moves, saved_weights):
+        self.actions = np.append(self.actions, np.array(
+            saved_actions))[-self.training_size:]
+        self.states = np.append(self.states, np.array(
+            saved_states), axis=0)[-self.training_size:]
+        self.next_states = np.append(
+            self.next_states, np.array(saved_states[16:]), axis=0)
+        self.next_states = np.append(self.next_states, np.zeros(
+            (16, 3, n_size, n_size)), axis=0)[-self.training_size:]
+        this_mask, this_rewards = np.ones(n_moves), np.zeros(n_moves)
+        this_mask[[-2, -1]] = np.array([0, 0])
+        this_rewards[[-2, -1]] = np.array([-1 * abs(winner) + (
+            1 - abs(winner)) * 1, 1 * abs(winner) + (1 - abs(winner)) * 1])
+        self.unfinish_mask = np.append(
+            self.unfinish_mask, np.repeat(this_mask, 8))[-self.training_size:]
+        self.rewards = np.append(self.rewards, np.repeat(
+            this_rewards, 8))[-self.training_size:]
+        self.weights = np.append(self.weights, np.array(
+            saved_weights))[-self.training_size:]
 
 
-def play(agents, dqn=None):
+def play(agents, cache=None):
     boards = np.zeros((8, n_size * n_size)).astype(int)
     record = np.zeros(n_size * n_size)
     winner = 0
     n_moves = 0
-
+    saved_actions = []
+    saved_states = []
+    saved_weights = []
     for move in range(n_size * n_size):
         n_moves += 1
         player = move % 2 * 2 - 1
-        current_boards = boards.copy()
         action_pos = agents[move % 2].act(boards[0], player)
         record[action_pos] = n_moves
         action_list = transform_action(action_pos)
+        for action, current_board in zip(action_list, boards):
+            saved_actions.append(action)
+            saved_states.append([
+                (current_board == player).reshape(n_size, n_size),
+                (current_board == -player).reshape(n_size, n_size),
+                (current_board == 0).reshape(n_size, n_size)
+            ])
+            # based on experimens, we only use second player for training
+            saved_weights.append(move % 2)
         boards[range(8), action_list] = player
-        if dqn is not None:
-            for action, current_board, next_board in zip(action_list, current_boards, boards):
-                dqn.actions = np.append(
-                    dqn.actions, action)[-dqn.training_size:]
-                dqn.states = np.append(dqn.states, np.array([[(current_board == player).reshape(
-                    n_size, n_size), (current_board == -player).reshape(n_size, n_size)]]), axis=0)[-dqn.training_size:]
-                dqn.next_states = np.append(dqn.next_states, np.array([[(next_board == player).reshape(
-                    n_size, n_size), (next_board == -player).reshape(n_size, n_size)]]), axis=0)[-dqn.training_size:]
         winner = is_done(boards[0].reshape((n_size, n_size)))
         if abs(winner) == 1:
             break
-    if dqn is not None:
-        this_mask, this_rewards = np.ones(n_moves), np.zeros(n_moves)
-        this_mask[[-2, -1]] = np.array([0, 0])
-        this_rewards[[-2, -1]] = np.array([-1 * abs(winner) + (
-            1 - abs(winner)) * 0, 1 * abs(winner) + (1 - abs(winner)) * 0])
-        dqn.unfinish_mask = np.append(
-            dqn.unfinish_mask, np.repeat(this_mask, 8))[-dqn.training_size:]
-        dqn.rewards = np.append(dqn.rewards, np.repeat(
-            this_rewards, 8))[-dqn.training_size:]
+    if cache is not None:
+        cache.save_play(saved_actions, saved_states,
+                        winner, n_moves, saved_weights)
     return record.reshape((n_size, n_size)), winner
 
 
@@ -204,17 +232,7 @@ def test(agents):
 
 def main():
     dqn = DQN()
-    minimax = MiniMax(max_depth=4)
-    random = RandomMove()
-    dqn.fit([dqn, dqn])
-    print('\t\t\t\twin/draw/lose')
-    dqn.eps = 0.1
-    print('dqn vs. dqn\t', test([dqn, dqn]))
-    dqn.eps = 0
-    print('dqn vs. random', test([dqn, random]))
-    print('random vs. dqn', test([random, dqn]))
-    print('dqn vs. minimax', test([dqn, minimax]))
-    print('minimax vs. dqn', test([minimax, dqn]))
+    dqn.fit()
 
 if __name__ == "__main__":
     main()
