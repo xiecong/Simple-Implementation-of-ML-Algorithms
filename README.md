@@ -136,10 +136,11 @@
 * Minimax `minimax.py`
 
 #### Reinforcement Learning
+* Temporal difference learning `temporal_difference.py`
+    * Tabular Q Learning
 * Deep Q-Network (DQN) `deep_q_network.py`
     * CNN Target & Policy Net
     * Epsilon-Greedy
-* Temporal difference learning (WIP)
 
 #### TODO - Unsupervised Learning
 * Clustering

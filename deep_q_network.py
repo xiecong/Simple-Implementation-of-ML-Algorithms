@@ -147,11 +147,11 @@ class DQN(object):
         minimax = MiniMax(max_depth=9)
         agents = [minimax, self]
         while self.states.shape[0] < self.training_size:
-            # idx = np.random.permutation([0, 1]).astype(int)
+            # np.random.shuffle(agents)
             play(agents, self)
         for iteration in range(self.n_episodes):
             self.eps *= self.eps_decay
-            # idx = np.random.permutation([0, 1]).astype(int)
+            # np.random.shuffle(agents)
             play(agents, self)
             print('iteration:', iteration, 'eps:', self.eps)
             for i in range(10):
@@ -161,8 +161,8 @@ class DQN(object):
             temp_eps = self.eps
             self.eps = 0
             print('\t\t\t\twin/draw/lose')
-            print('mm vs. dqn', test([minimax, self]))
-            print('dqn vs. mm', test([self, minimax]))
+            print('minimax vs. dqn', test([minimax, self]))
+            print('dqn vs. minimax', test([self, minimax]))
             print('random vs. dqn', test([random, self]))
             print('dqn vs. random', test([self, random]))
             self.eps = temp_eps
@@ -209,8 +209,8 @@ def play(agents, cache=None):
                 (current_board == -player).reshape(n_size, n_size),
                 (current_board == 0).reshape(n_size, n_size)
             ])
-            # based on experimens, we only use second player for training
-            saved_weights.append(move % 2)
+            # only do q learning update for the dqn's move
+            saved_weights.append(1 if isinstance(agents[move % 2], DQN) else 0)
         boards[range(8), action_list] = player
         winner = is_done(boards[0].reshape((n_size, n_size)))
         if abs(winner) == 1:
