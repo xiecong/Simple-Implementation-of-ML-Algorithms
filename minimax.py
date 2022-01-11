@@ -92,19 +92,18 @@ class MiniMax(object):
             return [], self.heuristic(board, player)
         # a value less than -1 so next step can pick a legal move
         board_scores = np.ones(board.shape[0]) * -2
-        heuristics_used = False
+        heuristics_used = np.zeros(board.shape[0])
         for i in range(board.shape[0]):
             if board[i] != 0:
                 continue
             board[i] = player
             board_scores[i] = -self.score(board, -player, depth + 1)[1]
-            heuristics_used = heuristics_used or ''.join(
-                [str(i) for i in board]) not in self.cache
+            heuristics_used[i] = ''.join([str(i) for i in board]) not in self.cache
             board[i] = 0
         best_score = np.amax(board_scores)
         best_moves = [i for i in range(board.shape[0]) if board_scores[
             i] == best_score]
-        if not heuristics_used:
+        if heuristics_used.sum() == 0 or (best_score == 1 and heuristics_used[best_moves].sum() == 0):
             self.cache[board_str] = best_moves, best_score
         return best_moves, best_score
 

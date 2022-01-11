@@ -77,7 +77,7 @@ class MCTS(object):
     def __init__(self):
         self.cache = {}
         self.rm = RandomMove()
-        self.n_iteration = 100
+        self.n_iteration = 10 * n_size * n_size
 
     def legal_moves(self, board):
         return [i for i in range(n_size * n_size) if board[i] == 0]
@@ -108,24 +108,23 @@ class MCTS(object):
     def search(self, root_node, player):
         for _ in range(self.n_iteration):
             parents = [root_node]
-            this_player = -player
             node = root_node
             while not node.done and node.n_visit > 0:
                 # selection
-                this_player = -this_player
                 next_move = self.selection(node)
                 if next_move not in node.children:  # expansion
                     child_board = node.board.copy()
-                    child_board[next_move] = this_player
+                    child_board[next_move] = -(node.board.sum() * 2 + 1)
+                    # unable to share cache since #visits are not consistent
                     node.children[next_move] = MCTSNode(child_board)
                 node = node.children[next_move]
                 parents.append(node)
             # simulation
-            result = self.simulation(node.board.copy(), this_player)
+            result = self.simulation(node.board.copy(), node.board.sum() * 2 + 1)
             # backpropagation
             for p in parents[::-1]:
+                this_player = p.board.sum() * 2 + 1
                 p.update(result * this_player)
-                this_player = -this_player
 
     def act(self, board, player):
         board_str = ''.join([str(int(i)) for i in board])
@@ -138,11 +137,13 @@ class MCTS(object):
 
 
 def main():
-    minimax = MiniMax(max_depth=5)
+    minimax = MiniMax(max_depth=9)
     mcts = MCTS()
     random = RandomMove()
+    test([minimax, mcts])
+    test([mcts, minimax])
+
     print('\t\t\t\twin/draw/lose')
-    test([mcts, mcts])
     print('mcts vs. mcts', test([mcts, mcts]))
     print('random vs. mcts', test([random, mcts]))
     print('mcts vs. random', test([mcts, random]))
