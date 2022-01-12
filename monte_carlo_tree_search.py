@@ -82,7 +82,7 @@ class MCTS(object):
         init_board_str = ''.join([str(i) for i in init_board])
         self.cache = {init_board_str: MCTSNode(init_board)}
         self.rm = RandomMove()
-        self.n_iteration = 6 * n_size * n_size
+        self.n_iteration = 4 * n_size * n_size
 
     def legal_moves(self, board):
         return [i for i in range(n_size * n_size) if board[i] == 0]
@@ -152,8 +152,7 @@ def main():
     minimax = MiniMax(max_depth=9)
     mcts = MCTS()
     random = RandomMove()
-    test([mcts, minimax])
-    test([minimax, mcts])
+    test([mcts, mcts])
     print('\t\t\t\twin/draw/lose')
     print('mcts vs. mcts', test([mcts, mcts]))
     print('random vs. mcts', test([random, mcts]))
