@@ -114,12 +114,11 @@
 
 #### Instance-based Learning and Kernel Machines
 * k-Nearest Neighbors (kNN) `k_nearest_neighbors.py`
-* Learning Vector Quantization (WIP)
+* Learning Vector Quantization
 * Support Vector Machine (SVM) `support_vector_machine.py`
     * Soft boundary
     * SMO algorithm
     * Different heuristics for selecting pairs in SMO
-* Radial Basis Function Network (WIP)
 
 #### Swarm Intelligence
 * Evolutionary Algorithm (EA) `evolutionary_algorithm.py`
@@ -134,6 +133,7 @@
 * Monte Carlo tree search `monte_carlo_tree_search.py`
     * Upper Confidence Bound 1 applied to trees (UCT)
 * Minimax `minimax.py`
+    * Alpha-Beta Pruning
 
 #### Reinforcement Learning
 * Temporal difference learning `temporal_difference.py`
@@ -142,10 +142,11 @@
     * CNN Target & Policy Net
     * Epsilon-Greedy
 
-#### TODO - Unsupervised Learning
-* Clustering
-    * k-Means / dbscan / spectrum / hierachical / SOM
-* Dimension Reduction
-    * Principal Component Analysis / Linear Discriminant Analysis / mds / tsne
+#### Unsupervised Learning
+* Clustering (WIP)
+    * k-Means / dbscan / spectrum / hierachical
+* Dimension Reduction (WIP)
+    * SOM
+    * Principal Component Analysis / Linear Discriminant Analysis / MDS / t-SNE
 
 Feel free to use the code. Please contact me if you have any question: xiecng [at] gmail.com

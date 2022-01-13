@@ -80,7 +80,7 @@ class MiniMax(object):
                  n_size - 1 and board[i] == board[i + n_size + 1])
         return (-evals[0] * player + evals[1] * player) / (evals[0] + evals[1] + 1)
 
-    def score(self, board, player, depth):
+    def score(self, board, player, depth, alpha, beta):
         board_str = ''.join([str(i) for i in board])
         if board_str in self.cache:  # cached before
             return self.cache[board_str]
@@ -97,9 +97,16 @@ class MiniMax(object):
             if board[i] != 0:
                 continue
             board[i] = player
-            board_scores[i] = -self.score(board, -player, depth + 1)[1]
+            board_scores[i] = -self.score(board, -player, depth + 1, alpha, beta)[1]
             heuristics_used[i] = ''.join([str(i) for i in board]) not in self.cache
             board[i] = 0
+            if(player == -1):
+                alpha = max(np.max(board_scores), alpha)
+            else:
+                beta = max(np.max(board_scores), beta)
+            # alpha beta pruning will reduce the # returned choice of winning moves
+            if alpha > -beta or (player == -1 and alpha == 1) or (player == 1 and beta == 1):
+                break
         best_score = np.amax(board_scores)
         best_moves = [i for i in range(board.shape[0]) if board_scores[
             i] == best_score]
@@ -108,7 +115,7 @@ class MiniMax(object):
         return best_moves, best_score
 
     def act(self, board, player):
-        return np.random.choice(self.score(board, player, 0)[0])
+        return np.random.choice(self.score(board, player, 0, -2, -2)[0])
 
 
 def main():

@@ -4,6 +4,7 @@ from multilayer_perceptron import MLP
 from restricted_boltzmann_machine import RBM
 
 
+# this implementation reused the training of MLP for back propagation
 class DBN(object):
 
     def __init__(self, layers, n_labels):
