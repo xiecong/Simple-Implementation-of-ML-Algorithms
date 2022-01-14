@@ -52,7 +52,7 @@ class CNN(object):
                 if b_idx % 100 == 0:
                     print("epoch {} batch {} loss: {}".format(
                         epoch, b_idx, batch_loss))
-                grad = y
+                grad = y  # the last softmax layer calculates the pred - y
                 for layer in self.layers[::-1]:
                     grad = layer.gradient(grad)
                 for layer in self.layers:
@@ -118,8 +118,8 @@ def main():
 
     cnn = CNN(x.shape[1:4], 10)
     cnn.fit(train_x, train_y)
-    print('train acc', cnn.get_accuracy(train_x, train_y))
-    print('test acc', cnn.get_accuracy(test_x, test_y))
+    print('train accuracy', cnn.get_accuracy(train_x, train_y))
+    print('test accuracy', cnn.get_accuracy(test_x, test_y))
 
 if __name__ == "__main__":
     # gradient_check()

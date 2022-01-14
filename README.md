@@ -65,7 +65,8 @@
             * Vanilla GAN
             * Deep Convolutional GAN (DCGAN)
             * discriminator vs generator
-    * Transfer Learning (WIP)
+    * Transfer Learning `transfer_learning.py`
+            * CNN on MNIST - freeze convolutional and fine tune dense layers
 * Layers `nn_layers.py` / `simple_cnn_layers.py`
     * Feedforward layer (dense)
     * Convolutional layer

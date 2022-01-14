@@ -4,6 +4,12 @@ from multilayer_perceptron import MLP
 from restricted_boltzmann_machine import RBM
 
 
+def softmax(x):
+    eps = 1e-8
+    out = np.exp(x - np.max(x, axis=1).reshape(-1, 1))
+    return out / (np.sum(out, axis=1).reshape(-1, 1) + eps)
+
+
 # this implementation reused the training of MLP for back propagation
 class DBN(object):
 
@@ -12,8 +18,7 @@ class DBN(object):
         self.n_labels = n_labels
         for n_v, n_h in zip(layers[:-1], layers[1:]):
             self.rbms.append(RBM(n_v, n_h, epochs=10, lr=0.1))
-        self.mlp = MLP(act_type='Sigmoid', opt_type='Adam', layers=layers +
-                       [n_labels], epochs=20, learning_rate=0.01, lmbda=1e-2)
+        self.dense = None
 
     def pretrain(self, x):
         v = x
@@ -23,18 +28,30 @@ class DBN(object):
 
     def finetuning(self, x, labels):
         # assign weights
-        self.mlp.w = [rbm.w for rbm in self.rbms] + \
+        layers = [x.shape[1]] + [rbm.b.shape[1] for rbm in self.rbms] + [self.n_labels]
+        mlp = MLP(act_type='Sigmoid', opt_type='Adam', layers=layers,
+            epochs=20, learning_rate=0.01, lmbda=1e-2)
+        
+        mlp.w = [rbm.w for rbm in self.rbms] + \
             [np.random.randn(self.rbms[-1].w.shape[1], self.n_labels)]
-        self.mlp.b = [rbm.b for rbm in self.rbms] + \
+        mlp.b = [rbm.b for rbm in self.rbms] + \
             [np.random.randn(1, self.n_labels)]
-        self.mlp.fit(x, labels)
+        mlp.fit(x, labels)
+        # give back the weights
+        # add the last feed-forward layer
+        for rbm, w, b in zip(self.rbms, mlp.w[:-1], mlp.b[:-1]):
+            rbm.w = w
+            rbm.b = b
+        self.dense = {'w': mlp.w[-1], 'b': mlp.b[-1]}
 
     def fit(self, x, y):
         self.pretrain(x)
         self.finetuning(x, y)
 
     def predict(self, x):
-        return self.mlp.predict(x)
+        for rbm in self.rbms:
+            x = rbm.marginal_h(x)
+        return softmax(self.dense['b'] + x.dot(self.dense['w']))
 
 
 def main():
@@ -51,19 +68,10 @@ def main():
     print('dbn training')
     dbn = DBN([train_x.shape[1], 100, 100], 10)
     dbn.fit(train_x, train_y)
-    print('dbn initialization train acc', sum(
+    print('dbn train accuracy', sum(
         np.argmax(dbn.predict(train_x), axis=1) == train_y) / train_y.shape[0])
-    print('dbn initialization test acc', sum(
+    print('dbn test accuracy', sum(
         np.argmax(dbn.predict(test_x), axis=1) == test_y) / test_y.shape[0])
-
-    print('mlp training')
-    mlp = MLP(act_type='Sigmoid', opt_type='Adam', layers=[train_x.shape[
-              1], 100, 100, 10], epochs=20, learning_rate=0.01, lmbda=1e-2)
-    mlp.fit(train_x, train_y)
-    print('mpl train acc', sum(np.argmax(mlp.predict(
-        train_x), axis=1) == train_y) / train_y.shape[0])
-    print('mpl test acc', sum(np.argmax(mlp.predict(
-        test_x), axis=1) == test_y) / test_y.shape[0])
 
 
 if __name__ == "__main__":
