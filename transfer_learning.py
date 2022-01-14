@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.datasets import fetch_openml
 from nn_layers import Conv, MaxPooling, FullyConnect, Activation, Softmax, BatchNormalization
 
-
+# learning on MNIST digit 0, 1, 2, 3, 4 and transfer to 5, 6, 7, 8, 9
 class NN(object):
 
     def __init__(self, layers):
