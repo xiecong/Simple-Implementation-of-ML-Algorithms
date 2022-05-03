@@ -106,7 +106,7 @@ def gradient_check(conv=True):
 
 
 def main():
-    x, y = fetch_openml('mnist_784', return_X_y=True, data_home="data")
+    x, y = fetch_openml('mnist_784', return_X_y=True, data_home="data", as_frame=False)
     x = x.reshape(-1, 1, 28, 28)
 
     test_ratio = 0.2

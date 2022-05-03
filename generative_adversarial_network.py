@@ -50,7 +50,7 @@ class NN(object):
 class GAN(object):
 
     def __init__(self):
-        self.n_epochs, self.batch_size = 5, 32
+        self.n_epochs, self.batch_size = 3, 64
         self.gen_input = 100
         self.dc_gan()
 
@@ -81,43 +81,43 @@ class GAN(object):
         ])
 
     def dc_gan(self):
-        gen_lr, dis_lr = 2e-3, 5e-4
+        gen_lr, dis_lr = 2e-3, 1e-3
         tconv1 = TrasposedConv((128, 7, 7), k_size=4,
-                               k_num=128, stride=2, padding=1, lr=gen_lr)
+                               k_num=128, stride=2, padding=1, lr=gen_lr, optimizer='RMSProp')
         tconv2 = TrasposedConv(tconv1.out_shape, k_size=4,
-                               k_num=128, stride=2, padding=1, lr=gen_lr)
+                               k_num=128, stride=2, padding=1, lr=gen_lr, optimizer='RMSProp')
         tconv3 = TrasposedConv(tconv2.out_shape, k_size=7,
-                               k_num=1, stride=1, padding=3, lr=gen_lr)
+                               k_num=1, stride=1, padding=3, lr=gen_lr, optimizer='RMSProp')
         self.generator = NN([
-            FullyConnect([self.gen_input], tconv1.in_shape, lr=gen_lr),
-            BatchNormalization(tconv1.in_shape, lr=gen_lr),
+            FullyConnect([self.gen_input], tconv1.in_shape, lr=gen_lr, optimizer='RMSProp'),
+            BatchNormalization(tconv1.in_shape, lr=gen_lr, optimizer='RMSProp'),
             Activation(act_type='ReLU'),
             tconv1,
-            BatchNormalization(tconv1.out_shape, lr=gen_lr),
+            BatchNormalization(tconv1.out_shape, lr=gen_lr, optimizer='RMSProp'),
             Activation(act_type='ReLU'),
             tconv2,
-            BatchNormalization(tconv2.out_shape, lr=gen_lr),
+            BatchNormalization(tconv2.out_shape, lr=gen_lr, optimizer='RMSProp'),
             Activation(act_type='ReLU'),
             tconv3,
-            BatchNormalization(tconv3.out_shape, lr=gen_lr),
+            BatchNormalization(tconv3.out_shape, lr=gen_lr, optimizer='RMSProp'),
             Activation(act_type='Tanh')
         ])
         conv1 = Conv((1, 28, 28), k_size=7, k_num=128,
-                     stride=1, padding=3, lr=dis_lr)
+                     stride=1, padding=3, lr=dis_lr, optimizer='RMSProp')
         conv2 = Conv(conv1.out_shape, k_size=4, k_num=128,
-                     stride=2, padding=1, lr=dis_lr)
+                     stride=2, padding=1, lr=dis_lr, optimizer='RMSProp')
         conv3 = Conv(conv2.out_shape, k_size=4, k_num=128,
-                     stride=2, padding=1, lr=dis_lr)
+                     stride=2, padding=1, lr=dis_lr, optimizer='RMSProp')
         self.discriminator = NN([
             conv1,
             Activation(act_type='LeakyReLU'),
             conv2,
-            BatchNormalization(conv2.out_shape, lr=dis_lr),
+            BatchNormalization(conv2.out_shape, lr=dis_lr, optimizer='RMSProp'),
             Activation(act_type='LeakyReLU'),
             conv3,
-            BatchNormalization(conv3.out_shape, lr=dis_lr),
+            BatchNormalization(conv3.out_shape, lr=dis_lr, optimizer='RMSProp'),
             Activation(act_type='LeakyReLU'),
-            FullyConnect(conv3.out_shape, [1], lr=dis_lr),
+            FullyConnect(conv3.out_shape, [1], lr=dis_lr, optimizer='RMSProp'),
             Activation(act_type='Sigmoid')
         ])
 
@@ -158,7 +158,7 @@ class GAN(object):
 
 
 def main():
-    x, _ = fetch_openml('mnist_784', return_X_y=True, data_home='data')
+    x, _ = fetch_openml('mnist_784', return_X_y=True, data_home='data', as_frame=False)
     x = 2 * (x / x.max()) - 1
     gan = GAN()
     images = gan.fit(x.reshape((-1, 1, 28, 28)))

@@ -91,7 +91,7 @@ class VAE(object):
 def main():
     #data = load_digits()
     #x, y = data.data, data.target
-    x, _ = fetch_openml('mnist_784', return_X_y=True, data_home="data")
+    x, _ = fetch_openml('mnist_784', return_X_y=True, data_home="data", as_frame=False)
     vae = VAE(x.shape[1], 64, 2)
     vae.fit(x / x.max())
 

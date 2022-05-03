@@ -140,8 +140,8 @@ class Conv(Layer):
 
 class TrasposedConv(Layer):
 
-    def __init__(self, in_shape, k_size, k_num, stride=1, padding=0, lr=1e-3):
-        super(TrasposedConv, self).__init__(lr=lr)
+    def __init__(self, in_shape, k_size, k_num, stride=1, padding=0, lr=1e-3, optimizer="Adam"):
+        super(TrasposedConv, self).__init__(lr=lr, optimizer=optimizer)
         self.in_shape = in_shape
         channel, height, width = in_shape
         self.k_size = k_size
@@ -300,8 +300,8 @@ class Activation(Layer):
 
 class BatchNormalization(Layer):
 
-    def __init__(self, in_shape, lr=1e-3, momentum=0.9):
-        super(BatchNormalization, self).__init__(lr=lr)
+    def __init__(self, in_shape, lr=1e-3, momentum=0.9, optimizer='Adam'):
+        super(BatchNormalization, self).__init__(lr=lr, optimizer=optimizer)
         self.in_shape = in_shape
         self.param_shape = (1, in_shape[0]) if len(
             in_shape) == 1 else (1, in_shape[0], 1, 1)

@@ -109,7 +109,7 @@ class TransferLearning(object):
 
 
 def main():
-    x_all, y_all = fetch_openml('mnist_784', return_X_y=True, data_home="data")
+    x_all, y_all = fetch_openml('mnist_784', return_X_y=True, data_home="data", as_frame=False)
     x_all = x_all.reshape(-1, 1, 28, 28)
     test_ratio = 0.2
     tl = TransferLearning()

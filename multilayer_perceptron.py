@@ -220,7 +220,7 @@ class MLP(object):
 
 
 def main():
-    x, y = fetch_openml('mnist_784', return_X_y=True, data_home="data")
+    x, y = fetch_openml('mnist_784', return_X_y=True, data_home="data", as_frame=False)
     test_ratio = 0.2
     test_split = np.random.uniform(0, 1, x.shape[0])
     train_x, test_x = x[test_split >= test_ratio] / \
