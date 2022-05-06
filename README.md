@@ -62,9 +62,8 @@
         * Deep Belief Network (DBN) `deep_belief_network.py`
         * Variational autoencoder (VAE) `variational_autoencoder.py`
         * Generative Adversarial Network (GAN) `generative_adversarial_network.py`
-            * Vanilla GAN
             * Deep Convolutional GAN (DCGAN)
-            * discriminator vs generator
+            * Conditional GAN
     * Transfer Learning `transfer_learning.py`
             * CNN on MNIST - freeze convolutional and fine tune dense layers
 * Layers `nn_layers.py` / `simple_cnn_layers.py`
