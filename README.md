@@ -1,4 +1,4 @@
-# Simple-Implementation-of-ML-Algorithms
+# Simple-Implementation-of-ML-Algorithms Using Only Numpy
 ### My simplest implementations of common ML algorithms from scratch.
 * Most commonly used algorithms including Regressions, Graph Models, Deep Learning, Ensemble Learning, Reinforcement Learning, Optimization Algorithms, Swarm Intelligence, Heuristic Search, and other basic ML algorithms (see below list for more details).
 * For an easy understanding, most of the codes implements only minimal version of the algorithm.
